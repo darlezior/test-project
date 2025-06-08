@@ -1,5 +1,5 @@
 import express from 'express';
-import { MapItem } from '../models/MapItem.js';
+import MapItem from '../models/MapItem.js';
 
 const router = express.Router();
 

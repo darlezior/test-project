@@ -14,4 +14,7 @@ const mapItemSchema = new mongoose.Schema({
   properties: { type: mongoose.Schema.Types.Mixed }, // altri attributi dinamici
 }, { timestamps: true });
 
-export const MapItem = mongoose.model('MapItem', mapItemSchema);
+// Evita OverwriteModelError
+const MapItem = mongoose.models.MapItem || mongoose.model('MapItem', mapItemSchema);
+
+export default MapItem;

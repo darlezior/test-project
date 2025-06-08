@@ -14,6 +14,7 @@
   align-items: center;
   justify-content: center;
 }
+
 #knob {
   width: 50px;
   height: 50px;
@@ -25,4 +26,36 @@
   user-select: none;
   /* parte che si muove con il dito */
   transform: translate(0px, 0px);
+}
+
+/* Contenitore pulsanti A e B */
+#buttons-container {
+  position: fixed;
+  bottom: 40px;
+  right: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  z-index: 1000;
+}
+
+/* Pulsanti A e B */
+.game-button {
+  width: 50px;
+  height: 50px;
+  background: rgba(255, 255, 255, 0.8);
+  border: none;
+  border-radius: 50%;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+  font-size: 20px;
+  font-weight: bold;
+  color: #222;
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 0.2s ease;
+}
+
+.game-button:active {
+  background-color: #ccc;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.4);
 }
