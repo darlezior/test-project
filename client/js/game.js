@@ -1,5 +1,5 @@
 import { io } from "https://cdn.socket.io/4.6.1/socket.io.esm.min.js";
-import { getMovementDirection } from './input.js';
+import { getMovementDirection, isButtonAPressed, isButtonBPressed } from './input.js';
 import { getJoystickDirection } from './joystick.js';
 import { log } from './logger.js';
 
@@ -10,13 +10,17 @@ let players = {};                        // Stato altri giocatori
 let localPlayerName = '';               // Username locale
 let localPosition = { x: 160, y: 120 }; // Posizione locale
 let localInventory = [];                // Inventario locale
-
 const socket = io();
 
 // Ultima posizione inviata
 let lastSentPosition = { x: null, y: null };
 let lastMoveSentTime = 0;
 const MOVE_SEND_INTERVAL = 200;
+
+// Rate limiting per i pulsanti A e B
+let lastButtonATime = 0;
+let lastButtonBTime = 0;
+const BUTTON_COOLDOWN = 300; // ms
 
 // Variabile stato inventario (aperto/chiuso)
 let inventoryVisible = false;
@@ -75,12 +79,13 @@ function drawCharacter(x, y, username, isLocal) {
   ctx.fillText(username, x, y + 30);
 }
 
-// Ciclo principale di gioco: aggiorna posizione e disegna
+// Ciclo principale di gioco: aggiorna posizione, gestisce input e disegna
 function gameLoop() {
   const keyDir = getMovementDirection();
   const joyDir = getJoystickDirection();
   const dx = keyDir.dx || joyDir.dx;
   const dy = keyDir.dy || joyDir.dy;
+
   if (dx !== 0 || dy !== 0) {
     localPosition.x += dx * 2;
     localPosition.y += dy * 2;
@@ -94,6 +99,22 @@ function gameLoop() {
       lastMoveSentTime = now;
     }
   }
+
+  // Gestione pulsante A con rate limit
+  const now = Date.now();
+  if (isButtonAPressed() && (now - lastButtonATime > BUTTON_COOLDOWN)) {
+    log('Premuto pulsante A - azione');
+    socket.emit('actionA');
+    lastButtonATime = now;
+  }
+
+  // Gestione pulsante B con rate limit
+  if (isButtonBPressed() && (now - lastButtonBTime > BUTTON_COOLDOWN)) {
+    log('Premuto pulsante B - indietro');
+    socket.emit('actionB');
+    lastButtonBTime = now;
+  }
+
   drawPlayers();
   requestAnimationFrame(gameLoop);
 }
