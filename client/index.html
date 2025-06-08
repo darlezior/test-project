@@ -6,10 +6,63 @@
   <title>MMO 2D Multiplayer</title>
   <link rel="stylesheet" href="css/joystick.css" />
   <style>
-    body { background: #222; color: white; font-family: monospace; margin: 0; }
-    #login-screen, #game-screen { padding: 10px; }
-    #game-screen { display: none; position: relative; }
-    canvas { background: #333; display: block; margin: 10px auto; border: 1px solid #555; }
+    body {
+      background: #222;
+      color: white;
+      font-family: monospace;
+      margin: 0;
+    }
+    #login-screen, #game-screen {
+      padding: 10px;
+    }
+    #game-screen {
+      display: none;
+      position: relative;
+    }
+    canvas {
+      background: #333;
+      display: block;
+      margin: 10px auto;
+      border: 1px solid #555;
+    }
+    /* Bottone inventory */
+    #btnInventory {
+      position: absolute;
+      right: 10px;
+      top: 10px;
+      background: #444;
+      color: white;
+      border: none;
+      padding: 6px 10px;
+      border-radius: 4px;
+      font-family: monospace;
+      cursor: pointer;
+      z-index: 10;
+    }
+    /* Pannello inventario nascosto di default */
+    #inventory {
+      position: absolute;
+      right: 10px;
+      top: 45px;
+      background: rgba(0, 0, 0, 0.8);
+      padding: 10px;
+      border: 1px solid #666;
+      border-radius: 5px;
+      max-width: 120px;
+      font-size: 14px;
+      display: none;
+      z-index: 9;
+    }
+    #inventory h3 {
+      margin-top: 0;
+      font-size: 16px;
+    }
+    .inventory-item {
+      padding: 2px 4px;
+      margin: 2px 0;
+      background: #444;
+      border-radius: 3px;
+    }
   </style>
 </head>
 <body>
@@ -22,14 +75,21 @@
   </div>
   <div id="game-screen">
     <canvas id="gameCanvas" width="320" height="240"></canvas>
-
     <!-- Joystick con knob interno -->
     <div id="joystick">
       <div id="knob"></div>
+    </div>
+    <!-- Bottone per aprire inventario -->
+    <button id="btnInventory">Inventory</button>
+    <!-- Inventario -->
+    <div id="inventory">
+      <h3>Inventario</h3>
+      <div id="inventory-items"></div>
     </div>
   </div>
   <!-- Log Box -->
   <div id="log" style="color: white; font-family: monospace; height: 120px; overflow-y: auto; background: #111; padding: 5px; margin: 10px;"></div>
   <script type="module" src="./js/login.js"></script>
+  <script type="module" src="./js/game.js"></script>
 </body>
 </html>

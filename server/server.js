@@ -1,3 +1,4 @@
+// server.js
 import express from 'express';
 import http from 'http';
 import { Server } from 'socket.io';
@@ -5,7 +6,12 @@ import mongoose from 'mongoose';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
-import { Player } from './models/Player.js';
+import { Player } from './models/player.js';
+import {
+  addItemToInventory,
+  removeItemFromInventory,
+  getInventory,
+} from './inventory.js';
 
 dotenv.config();
 
@@ -27,9 +33,9 @@ mongoose.connect(process.env.MONGODB_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 }).then(() => {
-  console.log('✅ Connesso a MongoDB Atlas');
+  console.log('✅  Connesso a MongoDB Atlas');
 }).catch((err) => {
-  console.error('❌ Errore connessione MongoDB:', err);
+  console.error('❌  Errore connessione MongoDB:', err);
 });
 
 // Route login base (può essere espansa in seguito)
@@ -48,7 +54,6 @@ io.on('connection', (socket) => {
 
   socket.on('joinGame', async (username) => {
     let player = await Player.findOne({ username });
-
     if (!player) {
       player = await Player.create({ username, socketId: socket.id });
     } else {
@@ -82,8 +87,24 @@ io.on('connection', (socket) => {
     }
   });
 
+  // ?? GESTIONE INVENTARIO
+  socket.on('getInventory', async () => {
+    const inventory = await getInventory(socket.id);
+    socket.emit('inventoryData', inventory);
+  });
+
+  socket.on('addItem', async (item) => {
+    const inventory = await addItemToInventory(socket.id, item);
+    socket.emit('inventoryData', inventory);
+  });
+
+  socket.on('removeItem', async (item) => {
+    const inventory = await removeItemFromInventory(socket.id, item);
+    socket.emit('inventoryData', inventory);
+  });
+
   socket.on('disconnect', async () => {
-    console.log('❌ Client disconnesso:', socket.id);
+    console.log('❌  Client disconnesso:', socket.id);
     await Player.deleteOne({ socketId: socket.id });
 
     const players = await Player.find({});
