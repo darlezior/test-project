@@ -1,15 +1,11 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Map Editor Test</title>
-  <style>
-    body { font-family: sans-serif; }
-    input, button { margin: 4px; }
-  </style>
+  <title>Map Editor</title>
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
   <h1>Map Items Editor</h1>
-
   <label>Map name: <input id="mapName" value="defaultMap"></label>
   <button onclick="loadItems()">Load Items</button>
   <hr>
@@ -24,46 +20,9 @@
     <button type="submit">Add Item</button>
   </form>
 
-  <script>
-    async function loadItems() {
-      const map = document.getElementById('mapName').value;
-      const res = await fetch('/map-editor/' + map);
-      const items = await res.json();
-      const listDiv = document.getElementById('itemsList');
-      listDiv.innerHTML = '';
-      items.forEach(i => {
-        const div = document.createElement('div');
-        div.textContent = `ID: ${i._id} | x: ${i.x}, y: ${i.y}, type: ${i.type}`;
-        const delBtn = document.createElement('button');
-        delBtn.textContent = 'Delete';
-        delBtn.onclick = async () => {
-          await fetch('/map-editor/' + i._id, { method: 'DELETE' });
-          loadItems();
-        };
-        div.appendChild(delBtn);
-        listDiv.appendChild(div);
-      });
-    }
+  <h2>Grid Editor</h2>
+  <canvas id="mapCanvas" width="512" height="512"></canvas>
 
-    async function addItem(e) {
-      e.preventDefault();
-      const form = e.target;
-      const map = document.getElementById('mapName').value;
-      const data = {
-        map,
-        x: Number(form.x.value),
-        y: Number(form.y.value),
-        type: form.type.value,
-        properties: {}
-      };
-      await fetch('/map-editor', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-      });
-      form.reset();
-      loadItems();
-    }
-  </script>
+  <script src="editor.js"></script>
 </body>
 </html>

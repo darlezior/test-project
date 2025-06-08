@@ -1,0 +1,16 @@
+body {
+  font-family: sans-serif;
+  padding: 16px;
+  background-color: #f0f0f0;
+}
+
+canvas {
+  border: 1px solid #333;
+  background-color: #fff;
+  cursor: pointer;
+  margin-top: 10px;
+}
+
+input, button {
+  margin: 4px;
+}
