@@ -1,0 +1,28 @@
+#joystick {
+  position: fixed; /* sempre visibile, fuori area gioco */
+  bottom: 20px;
+  left: 20px;
+  width: 100px;
+  height: 100px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 50%;
+  touch-action: none;
+  user-select: none;
+  z-index: 1000;
+  box-shadow: 0 0 10px rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+#knob {
+  width: 50px;
+  height: 50px;
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 50%;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+  transition: transform 0.1s ease-out;
+  touch-action: none;
+  user-select: none;
+  /* parte che si muove con il dito */
+  transform: translate(0px, 0px);
+}

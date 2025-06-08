@@ -1,31 +1,35 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>MMO 2D Multiplayer</title>
-<style>
-  body { background: #222; color: white; font-family: monospace; margin: 0; }
-  #login-screen, #game-screen { padding: 10px; }
-  #game-screen { display: none; }
-  canvas { background: #333; display: block; margin: 10px auto; border: 1px solid #555; }
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>MMO 2D Multiplayer</title>
+  <link rel="stylesheet" href="css/joystick.css" />
+  <style>
+    body { background: #222; color: white; font-family: monospace; margin: 0; }
+    #login-screen, #game-screen { padding: 10px; }
+    #game-screen { display: none; position: relative; }
+    canvas { background: #333; display: block; margin: 10px auto; border: 1px solid #555; }
+  </style>
 </head>
 <body>
+  <div id="login-screen">
+    <h2>Login</h2>
+    <input id="username" placeholder="Username" />
+    <input id="password" type="password" placeholder="Password" />
+    <button id="btnLogin">Entra</button>
+    <p id="login-message"></p>
+  </div>
+  <div id="game-screen">
+    <canvas id="gameCanvas" width="320" height="240"></canvas>
 
-<div id="login-screen">
-  <h2>Login</h2>
-  <input id="username" placeholder="Username" />
-  <input id="password" type="password" placeholder="Password" />
-  <button id="btnLogin">Entra</button>
-  <p id="login-message"></p>
-</div>
-
-<div id="game-screen">
-  <canvas id="gameCanvas" width="320" height="240"></canvas>
-</div>
-
-<script type="module" src="./js/login.js"></script>
-
+    <!-- Joystick con knob interno -->
+    <div id="joystick">
+      <div id="knob"></div>
+    </div>
+  </div>
+  <!-- Log Box -->
+  <div id="log" style="color: white; font-family: monospace; height: 120px; overflow-y: auto; background: #111; padding: 5px; margin: 10px;"></div>
+  <script type="module" src="./js/login.js"></script>
 </body>
 </html>
