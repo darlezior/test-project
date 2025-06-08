@@ -1,5 +1,3 @@
-// server/server.js
-
 import express from 'express';
 import http from 'http';
 import { Server } from 'socket.io';
@@ -27,7 +25,8 @@ dotenv.config();
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
-const port = 3000;
+
+const port = process.env.PORT || 3000;
 
 // Path compatibile con ESM
 const __filename = fileURLToPath(import.meta.url);
@@ -37,107 +36,157 @@ const __dirname = path.dirname(__filename);
 app.use(express.static(path.join(__dirname, '../client')));
 app.use(express.json());
 
-// UI statica per il Map Editor
+// UI statica per il Map Editor (file frontend)
 app.use('/map-editor', express.static(path.join(__dirname, 'map-editor/public')));
 
-// Rotte API modulari
+// --- ROTTE API MODULARI ---
 app.use('/map-editor/api', mapEditorRoutes);
 app.use('/equipment', equipmentRoutes);
 app.use('/mapitems', mapItemRoutes);
 
-// Connessione a MongoDB Atlas
-mongoose.connect(process.env.MONGODB_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-}).then(() => {
-  console.log('✅  Connesso a MongoDB Atlas');
-}).catch((err) => {
-  console.error('❌  Errore connessione MongoDB:', err);
-});
+// Connessione a MongoDB Atlas con gestione errori
+mongoose
+  .connect(process.env.MONGODB_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  })
+  .then(() => {
+    console.log('✅ Connesso a MongoDB Atlas');
+  })
+  .catch((err) => {
+    console.error('❌ Errore connessione MongoDB:', err);
+    process.exit(1); // esce se non si connette
+  });
 
-// Login API (base)
+// --- API BASE: login semplice (da migliorare lato sicurezza) ---
 app.post('/login', (req, res) => {
   const { username, password } = req.body;
-  if (username && password) {
-    res.json({ success: true, username });
-  } else {
-    res.json({ success: false, message: 'Credenziali mancanti' });
+  if (!username || !password) {
+    return res.status(400).json({ success: false, message: 'Credenziali mancanti' });
   }
+  // TODO: aggiungere verifica reale credenziali da DB o auth service
+  res.json({ success: true, username });
 });
 
-// Socket.io - multiplayer
+// --- Socket.io gestione multiplayer ---
 io.on('connection', (socket) => {
   console.log('?? Nuovo client connesso:', socket.id);
 
+  // Evento joinGame con username
   socket.on('joinGame', async (username) => {
-    let player = await Player.findOne({ username });
+    try {
+      let player = await Player.findOne({ username });
 
-    if (!player) {
-      player = await Player.create({ username, socketId: socket.id });
-    } else {
-      player.socketId = socket.id;
-      await player.save();
-    }
+      if (!player) {
+        player = await Player.create({ username, socketId: socket.id, x: 0, y: 0 });
+      } else {
+        player.socketId = socket.id;
+        await player.save();
+      }
 
-    const mapData = await getMapData('start');
-    socket.emit('mapData', mapData);
+      // Invia dati mappa iniziale (es: 'start')
+      const mapData = await getMapData('start');
+      socket.emit('mapData', mapData);
 
-    const players = await Player.find({});
-    io.emit('playersUpdate', players.map(p => ({
-      username: p.username,
-      x: p.x,
-      y: p.y,
-      socketId: p.socketId,
-    })));
-  });
-
-  socket.on('move', async (pos) => {
-    const player = await Player.findOne({ socketId: socket.id });
-    if (player) {
-      player.x = pos.x;
-      player.y = pos.y;
-      await player.save();
-
+      // Invia aggiornamento lista giocatori a tutti
       const players = await Player.find({});
-      io.emit('playersUpdate', players.map(p => ({
-        username: p.username,
-        x: p.x,
-        y: p.y,
-        socketId: p.socketId,
-      })));
+      io.emit(
+        'playersUpdate',
+        players.map((p) => ({
+          username: p.username,
+          x: p.x,
+          y: p.y,
+          socketId: p.socketId,
+        }))
+      );
+    } catch (err) {
+      console.error('Errore joinGame:', err);
+      socket.emit('error', { message: 'Errore interno nel joinGame' });
     }
   });
 
+  // Movimento giocatore
+  socket.on('move', async (pos) => {
+    try {
+      if (!pos || typeof pos.x !== 'number' || typeof pos.y !== 'number') {
+        return socket.emit('error', { message: 'Posizione non valida' });
+      }
+      const player = await Player.findOne({ socketId: socket.id });
+      if (player) {
+        player.x = pos.x;
+        player.y = pos.y;
+        await player.save();
+
+        const players = await Player.find({});
+        io.emit(
+          'playersUpdate',
+          players.map((p) => ({
+            username: p.username,
+            x: p.x,
+            y: p.y,
+            socketId: p.socketId,
+          }))
+        );
+      }
+    } catch (err) {
+      console.error('Errore movimento:', err);
+      socket.emit('error', { message: 'Errore interno nel movimento' });
+    }
+  });
+
+  // Inventory events
   socket.on('getInventory', async () => {
-    const inventory = await getInventory(socket.id);
-    socket.emit('inventoryData', inventory);
+    try {
+      const inventory = await getInventory(socket.id);
+      socket.emit('inventoryData', inventory);
+    } catch (err) {
+      console.error('Errore getInventory:', err);
+      socket.emit('error', { message: 'Errore nel caricamento inventario' });
+    }
   });
 
   socket.on('addItem', async (item) => {
-    const inventory = await addItemToInventory(socket.id, item);
-    socket.emit('inventoryData', inventory);
+    try {
+      const inventory = await addItemToInventory(socket.id, item);
+      socket.emit('inventoryData', inventory);
+    } catch (err) {
+      console.error('Errore addItem:', err);
+      socket.emit('error', { message: 'Errore nell\'aggiunta oggetto' });
+    }
   });
 
   socket.on('removeItem', async (item) => {
-    const inventory = await removeItemFromInventory(socket.id, item);
-    socket.emit('inventoryData', inventory);
+    try {
+      const inventory = await removeItemFromInventory(socket.id, item);
+      socket.emit('inventoryData', inventory);
+    } catch (err) {
+      console.error('Errore removeItem:', err);
+      socket.emit('error', { message: 'Errore nella rimozione oggetto' });
+    }
   });
 
+  // Disconnessione client
   socket.on('disconnect', async () => {
-    console.log('❌  Client disconnesso:', socket.id);
-    await Player.deleteOne({ socketId: socket.id });
-
-    const players = await Player.find({});
-    io.emit('playersUpdate', players.map(p => ({
-      username: p.username,
-      x: p.x,
-      y: p.y,
-      socketId: p.socketId,
-    })));
+    try {
+      console.log('?? Client disconnesso:', socket.id);
+      await Player.deleteOne({ socketId: socket.id });
+      const players = await Player.find({});
+      io.emit(
+        'playersUpdate',
+        players.map((p) => ({
+          username: p.username,
+          x: p.x,
+          y: p.y,
+          socketId: p.socketId,
+        }))
+      );
+    } catch (err) {
+      console.error('Errore disconnessione:', err);
+    }
   });
 });
 
-// Avvio del server
+// Avvio del server HTTP + Socket.io
 server.listen(port, () => {
   console.log(`?? Server avviato su http://localhost:${port}`);
 });

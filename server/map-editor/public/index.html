@@ -3,43 +3,145 @@
 <head>
   <meta charset="UTF-8" />
   <title>Map Editor</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="stylesheet" href="styles.css" />
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 10px;
+      background: #f0f0f0;
+    }
+    #editor-container {
+      display: flex;
+      gap: 20px;
+      max-width: 900px;
+      margin: auto;
+      flex-wrap: wrap;
+    }
+    #controls {
+      width: 280px;
+      background: white;
+      padding: 15px;
+      border-radius: 6px;
+      box-shadow: 0 0 8px rgba(0,0,0,0.1);
+      overflow-y: auto;
+      height: 500px;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+    }
+    #controls h1, #controls h2 {
+      margin-top: 0;
+    }
+    #controls label {
+      display: block;
+      margin-bottom: 10px;
+      font-weight: bold;
+    }
+    #controls input[type="number"],
+    #controls input[type="text"] {
+      width: 100%;
+      padding: 6px;
+      margin-top: 4px;
+      box-sizing: border-box;
+      font-size: 14px;
+    }
+    #controls button {
+      margin-top: 10px;
+      padding: 8px 12px;
+      cursor: pointer;
+      font-size: 15px;
+      border-radius: 4px;
+      border: 1px solid #888;
+      background-color: #eee;
+      transition: background-color 0.3s ease;
+    }
+    #controls button:hover {
+      background-color: #ddd;
+    }
+    #itemsList {
+      margin-top: 10px;
+      max-height: 220px;
+      overflow-y: auto;
+      border: 1px solid #ccc;
+      padding: 6px;
+      background: #fafafa;
+      border-radius: 4px;
+      font-size: 14px;
+      flex-grow: 1;
+    }
+    #itemsList div {
+      margin-bottom: 6px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #e6ffe6;
+      padding: 4px 6px;
+      border-radius: 3px;
+      word-break: break-word;
+    }
+    #itemsList button {
+      background: #d9534f;
+      color: white;
+      border: none;
+      padding: 3px 7px;
+      border-radius: 3px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+    }
+    #itemsList button:hover {
+      background: #c9302c;
+    }
+    canvas {
+      background: white;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      cursor: crosshair;
+      max-width: 100%;
+      height: auto;
+      flex-grow: 1;
+    }
+  </style>
 </head>
 <body>
   <div id="editor-container">
     <div id="controls">
       <h1>Map Editor</h1>
-      <label>
+      <label for="mapName">
         Map name:
-        <input id="mapName" value="defaultMap" />
+        <input id="mapName" type="text" value="defaultMap" autocomplete="off" />
       </label>
-      <button onclick="loadItems()">Load Items</button>
+      <button id="loadBtn" type="button">Load Items</button>
       <hr />
       <h2>Add New Item</h2>
-      <form id="addForm" onsubmit="addItem(event)">
-        <input placeholder="x" name="x" type="number" required />
-        <input placeholder="y" name="y" type="number" required />
-        <input placeholder="type" name="type" required />
+      <form id="addForm">
+        <input placeholder="x" name="x" type="number" min="0" required />
+        <input placeholder="y" name="y" type="number" min="0" required />
+        <input placeholder="type" name="type" type="text" required autocomplete="off" />
         <button type="submit">Add Item</button>
       </form>
       <hr />
       <h2>Current Items</h2>
-      <div id="itemsList"></div>
+      <div id="itemsList">Carica una mappa per visualizzare gli elementi...</div>
     </div>
-    <canvas id="gridCanvas" width="320" height="320"></canvas>
+    <canvas id="gridCanvas" width="640" height="480" tabindex="0" aria-label="Map grid"></canvas>
   </div>
 
   <script>
+    // Costanti e setup iniziale
     const canvas = document.getElementById('gridCanvas');
     const ctx = canvas.getContext('2d');
     const tileSize = 32;
     const rows = Math.floor(canvas.height / tileSize);
     const cols = Math.floor(canvas.width / tileSize);
 
+    // Disegna la griglia
     function drawGrid() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.strokeStyle = '#ccc';
+      ctx.lineWidth = 1;
       for (let x = 0; x <= cols; x++) {
         ctx.beginPath();
         ctx.moveTo(x * tileSize, 0);
@@ -54,60 +156,105 @@
       }
     }
 
+    // Disegna gli elementi sulla griglia
     function drawItems(items) {
       items.forEach(i => {
         ctx.fillStyle = 'green';
         ctx.fillRect(i.x * tileSize, i.y * tileSize, tileSize, tileSize);
         ctx.fillStyle = 'white';
-        ctx.fillText(i.type, i.x * tileSize + 4, i.y * tileSize + 16);
+        ctx.font = '14px Arial';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(i.type, i.x * tileSize + 4, i.y * tileSize + tileSize / 2);
       });
     }
 
+    // Carica gli elementi dal server per la mappa specificata
     async function loadItems() {
-      const map = document.getElementById('mapName').value;
-      const res = await fetch('/map-editor/api/' + map);
-      const items = await res.json();
+      const map = document.getElementById('mapName').value.trim();
+      if (!map) {
+        alert('Inserisci il nome della mappa!');
+        return;
+      }
+      try {
+        const res = await fetch('/map-editor/api/mapcells/' + encodeURIComponent(map));
+        if (!res.ok) throw new Error(`Errore nel caricamento degli elementi: ${res.status} ${res.statusText}`);
+        const items = await res.json();
 
-      const listDiv = document.getElementById('itemsList');
-      listDiv.innerHTML = '';
-      items.forEach(i => {
-        const div = document.createElement('div');
-        div.textContent = `ID: ${i._id} | x: ${i.x}, y: ${i.y}, type: ${i.type}`;
-        const delBtn = document.createElement('button');
-        delBtn.textContent = 'Delete';
-        delBtn.onclick = async () => {
-          await fetch('/map-editor/api/' + i._id, { method: 'DELETE' });
-          loadItems();
-        };
-        div.appendChild(delBtn);
-        listDiv.appendChild(div);
-      });
+        const listDiv = document.getElementById('itemsList');
+        listDiv.innerHTML = '';
 
-      drawGrid();
-      drawItems(items);
+        if (items.length === 0) {
+          listDiv.textContent = 'Nessun elemento presente sulla mappa.';
+        } else {
+          items.forEach(i => {
+            const div = document.createElement('div');
+            div.textContent = `ID: ${i._id} | x: ${i.x}, y: ${i.y}, type: ${i.type}`;
+
+            const delBtn = document.createElement('button');
+            delBtn.textContent = 'Delete';
+            delBtn.title = 'Elimina questo elemento';
+            delBtn.onclick = async () => {
+              if (confirm('Sei sicuro di voler cancellare questo elemento?')) {
+                const delRes = await fetch('/map-editor/api/mapcells/' + i._id, { method: 'DELETE' });
+                if (!delRes.ok) {
+                  alert(`Errore nella cancellazione: ${delRes.status} ${delRes.statusText}`);
+                  return;
+                }
+                await loadItems();
+              }
+            };
+
+            div.appendChild(delBtn);
+            listDiv.appendChild(div);
+          });
+        }
+        drawGrid();
+        drawItems(items);
+      } catch (err) {
+        alert(err.message);
+      }
     }
 
+    // Aggiunge un nuovo elemento tramite POST
     async function addItem(e) {
       e.preventDefault();
       const form = e.target;
-      const map = document.getElementById('mapName').value;
-      const data = {
-        map,
-        x: Number(form.x.value),
-        y: Number(form.y.value),
-        type: form.type.value,
-        properties: {}
-      };
-      await fetch('/map-editor/api', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-      });
-      form.reset();
-      loadItems();
+      const map = document.getElementById('mapName').value.trim();
+      if (!map) {
+        alert('Inserisci il nome della mappa prima di aggiungere elementi.');
+        return;
+      }
+      const x = Number(form.x.value);
+      const y = Number(form.y.value);
+      const type = form.type.value.trim();
+
+      if (isNaN(x) || x < 0 || isNaN(y) || y < 0) {
+        alert('Inserisci coordinate valide (numeri positivi).');
+        return;
+      }
+      if (!type) {
+        alert('Inserisci un tipo valido per l\'elemento.');
+        return;
+      }
+
+      const data = { mapName: map, x, y, type, data: {} };
+
+      try {
+        const res = await fetch('/map-editor/api/mapcells', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+        if (!res.ok) throw new Error(`Errore nell'aggiunta dell'elemento: ${res.status} ${res.statusText}`);
+        form.reset();
+        await loadItems();
+      } catch (err) {
+        alert(err.message);
+      }
     }
 
-    canvas.addEventListener('click', function (e) {
+    // Clic sul canvas imposta le coordinate negli input
+    canvas.addEventListener('click', e => {
       const rect = canvas.getBoundingClientRect();
       const x = Math.floor((e.clientX - rect.left) / tileSize);
       const y = Math.floor((e.clientY - rect.top) / tileSize);
@@ -115,7 +262,15 @@
       document.querySelector('input[name="y"]').value = y;
     });
 
+    // Event listeners
+    document.getElementById('loadBtn').addEventListener('click', loadItems);
+    document.getElementById('addForm').addEventListener('submit', addItem);
+
+    // Disegna griglia vuota all'avvio
     drawGrid();
+
+    // Carica elementi iniziali
+    //loadItems();  // Meglio lasciare a click utente
   </script>
 </body>
 </html>
