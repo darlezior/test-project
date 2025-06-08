@@ -1,11 +1,11 @@
+// server/map-editor/routes.js
 import express from 'express';
-import { getItems, createItem, updateItem, deleteItem } from './controller.js';
+import { listMapItems, addMapItem, deleteMapItem } from './controller.js';
 
 const router = express.Router();
 
-router.get('/:map', getItems);
-router.post('/', createItem);
-router.put('/:id', updateItem);
-router.delete('/:id', deleteItem);
+router.get('/:map', listMapItems);
+router.post('/', addMapItem);
+router.delete('/:id', deleteMapItem);
 
 export default router;

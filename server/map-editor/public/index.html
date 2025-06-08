@@ -1,28 +1,121 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+  <meta charset="UTF-8" />
   <title>Map Editor</title>
-  <link rel="stylesheet" href="styles.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <h1>Map Items Editor</h1>
-  <label>Map name: <input id="mapName" value="defaultMap"></label>
-  <button onclick="loadItems()">Load Items</button>
-  <hr>
+  <div id="editor-container">
+    <div id="controls">
+      <h1>Map Editor</h1>
+      <label>
+        Map name:
+        <input id="mapName" value="defaultMap" />
+      </label>
+      <button onclick="loadItems()">Load Items</button>
+      <hr />
+      <h2>Add New Item</h2>
+      <form id="addForm" onsubmit="addItem(event)">
+        <input placeholder="x" name="x" type="number" required />
+        <input placeholder="y" name="y" type="number" required />
+        <input placeholder="type" name="type" required />
+        <button type="submit">Add Item</button>
+      </form>
+      <hr />
+      <h2>Current Items</h2>
+      <div id="itemsList"></div>
+    </div>
+    <canvas id="gridCanvas" width="320" height="320"></canvas>
+  </div>
 
-  <div id="itemsList"></div>
+  <script>
+    const canvas = document.getElementById('gridCanvas');
+    const ctx = canvas.getContext('2d');
+    const tileSize = 32;
+    const rows = Math.floor(canvas.height / tileSize);
+    const cols = Math.floor(canvas.width / tileSize);
 
-  <h2>Add New Item</h2>
-  <form id="addForm" onsubmit="addItem(event)">
-    <input placeholder="x" name="x" type="number" required>
-    <input placeholder="y" name="y" type="number" required>
-    <input placeholder="type" name="type" required>
-    <button type="submit">Add Item</button>
-  </form>
+    function drawGrid() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.strokeStyle = '#ccc';
+      for (let x = 0; x <= cols; x++) {
+        ctx.beginPath();
+        ctx.moveTo(x * tileSize, 0);
+        ctx.lineTo(x * tileSize, canvas.height);
+        ctx.stroke();
+      }
+      for (let y = 0; y <= rows; y++) {
+        ctx.beginPath();
+        ctx.moveTo(0, y * tileSize);
+        ctx.lineTo(canvas.width, y * tileSize);
+        ctx.stroke();
+      }
+    }
 
-  <h2>Grid Editor</h2>
-  <canvas id="mapCanvas" width="512" height="512"></canvas>
+    function drawItems(items) {
+      items.forEach(i => {
+        ctx.fillStyle = 'green';
+        ctx.fillRect(i.x * tileSize, i.y * tileSize, tileSize, tileSize);
+        ctx.fillStyle = 'white';
+        ctx.fillText(i.type, i.x * tileSize + 4, i.y * tileSize + 16);
+      });
+    }
 
-  <script src="editor.js"></script>
+    async function loadItems() {
+      const map = document.getElementById('mapName').value;
+      const res = await fetch('/map-editor/api/' + map);
+      const items = await res.json();
+
+      const listDiv = document.getElementById('itemsList');
+      listDiv.innerHTML = '';
+      items.forEach(i => {
+        const div = document.createElement('div');
+        div.textContent = `ID: ${i._id} | x: ${i.x}, y: ${i.y}, type: ${i.type}`;
+        const delBtn = document.createElement('button');
+        delBtn.textContent = 'Delete';
+        delBtn.onclick = async () => {
+          await fetch('/map-editor/api/' + i._id, { method: 'DELETE' });
+          loadItems();
+        };
+        div.appendChild(delBtn);
+        listDiv.appendChild(div);
+      });
+
+      drawGrid();
+      drawItems(items);
+    }
+
+    async function addItem(e) {
+      e.preventDefault();
+      const form = e.target;
+      const map = document.getElementById('mapName').value;
+      const data = {
+        map,
+        x: Number(form.x.value),
+        y: Number(form.y.value),
+        type: form.type.value,
+        properties: {}
+      };
+      await fetch('/map-editor/api', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      form.reset();
+      loadItems();
+    }
+
+    canvas.addEventListener('click', function (e) {
+      const rect = canvas.getBoundingClientRect();
+      const x = Math.floor((e.clientX - rect.left) / tileSize);
+      const y = Math.floor((e.clientY - rect.top) / tileSize);
+      document.querySelector('input[name="x"]').value = x;
+      document.querySelector('input[name="y"]').value = y;
+    });
+
+    drawGrid();
+  </script>
 </body>
 </html>

@@ -1,4 +1,5 @@
-// server.js
+// server/server.js
+
 import express from 'express';
 import http from 'http';
 import { Server } from 'socket.io';
@@ -7,6 +8,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 
+// Import moduli locali
 import { Player } from './models/player.js';
 import {
   addItemToInventory,
@@ -15,9 +17,8 @@ import {
 } from './inventory.js';
 import { getMapData } from './map/mapManager.js';
 
-// Import rotte editor da map-editor/routes.js
+// Rotte modulari
 import mapEditorRoutes from './map-editor/routes.js';
-
 import equipmentRoutes from './routes/equipment.js';
 import mapItemRoutes from './routes/mapitems.js';
 
@@ -26,31 +27,35 @@ dotenv.config();
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
-
 const port = 3000;
 
-// ESM compatibilità path
+// Path compatibile con ESM
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Middleware statici e JSON
+// Middleware
 app.use(express.static(path.join(__dirname, '../client')));
 app.use(express.json());
 
-// Statici map editor UI (index.html + assets) sotto /map-editor
+// UI statica per il Map Editor
 app.use('/map-editor', express.static(path.join(__dirname, 'map-editor/public')));
+
+// Rotte API modulari
+app.use('/map-editor/api', mapEditorRoutes);
+app.use('/equipment', equipmentRoutes);
+app.use('/mapitems', mapItemRoutes);
 
 // Connessione a MongoDB Atlas
 mongoose.connect(process.env.MONGODB_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 }).then(() => {
-  console.log('✅ Connesso a MongoDB Atlas');
+  console.log('✅  Connesso a MongoDB Atlas');
 }).catch((err) => {
-  console.error('❌ Errore connessione MongoDB:', err);
+  console.error('❌  Errore connessione MongoDB:', err);
 });
 
-// Rotte base
+// Login API (base)
 app.post('/login', (req, res) => {
   const { username, password } = req.body;
   if (username && password) {
@@ -60,23 +65,20 @@ app.post('/login', (req, res) => {
   }
 });
 
-// Rotte modulari
-app.use('/equipment', equipmentRoutes);
-app.use('/mapitems', mapItemRoutes);
-app.use('/map-editor/api', mapEditorRoutes);
-
-// Socket.io multiplayer
+// Socket.io - multiplayer
 io.on('connection', (socket) => {
   console.log('?? Nuovo client connesso:', socket.id);
 
   socket.on('joinGame', async (username) => {
     let player = await Player.findOne({ username });
+
     if (!player) {
       player = await Player.create({ username, socketId: socket.id });
     } else {
       player.socketId = socket.id;
       await player.save();
     }
+
     const mapData = await getMapData('start');
     socket.emit('mapData', mapData);
 
@@ -122,8 +124,9 @@ io.on('connection', (socket) => {
   });
 
   socket.on('disconnect', async () => {
-    console.log('❌ Client disconnesso:', socket.id);
+    console.log('❌  Client disconnesso:', socket.id);
     await Player.deleteOne({ socketId: socket.id });
+
     const players = await Player.find({});
     io.emit('playersUpdate', players.map(p => ({
       username: p.username,
@@ -134,7 +137,7 @@ io.on('connection', (socket) => {
   });
 });
 
-// Avvio server
+// Avvio del server
 server.listen(port, () => {
   console.log(`?? Server avviato su http://localhost:${port}`);
 });

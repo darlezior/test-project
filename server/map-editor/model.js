@@ -1,3 +1,4 @@
+// server/map-editor/model.js
 import mongoose from 'mongoose';
 
 const mapItemSchema = new mongoose.Schema({
@@ -5,7 +6,7 @@ const mapItemSchema = new mongoose.Schema({
   x: { type: Number, required: true },
   y: { type: Number, required: true },
   type: { type: String, required: true },
-  properties: { type: Object, default: {} },
+  properties: { type: mongoose.Schema.Types.Mixed, default: {} }
 }, { timestamps: true });
 
-export const MapItem = mongoose.model('MapItem', mapItemSchema);
+export default mongoose.models.MapItem || mongoose.model('MapItem', mapItemSchema);

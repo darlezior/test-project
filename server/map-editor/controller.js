@@ -1,37 +1,20 @@
-import { MapItem } from './model.js';
+// server/map-editor/controller.js
+import MapItem from './model.js';
 
-export async function getItems(req, res) {
+export async function listMapItems(req, res) {
   const map = req.params.map;
-  const items = await MapItem.find({ map });
+  const items = await MapItem.find({ map }).lean();
   res.json(items);
 }
 
-export async function createItem(req, res) {
-  try {
-    const newItem = new MapItem(req.body);
-    await newItem.save();
-    res.status(201).json(newItem);
-  } catch (err) {
-    res.status(400).json({ error: err.message });
-  }
+export async function addMapItem(req, res) {
+  const { map, x, y, type, properties } = req.body;
+  const item = new MapItem({ map, x, y, type, properties: properties || {} });
+  await item.save();
+  res.status(201).json(item);
 }
 
-export async function updateItem(req, res) {
-  try {
-    const updated = await MapItem.findByIdAndUpdate(req.params.id, req.body, { new: true });
-    if (!updated) return res.status(404).json({ error: 'Item not found' });
-    res.json(updated);
-  } catch (err) {
-    res.status(400).json({ error: err.message });
-  }
-}
-
-export async function deleteItem(req, res) {
-  try {
-    const deleted = await MapItem.findByIdAndDelete(req.params.id);
-    if (!deleted) return res.status(404).json({ error: 'Item not found' });
-    res.json({ message: 'Deleted' });
-  } catch (err) {
-    res.status(400).json({ error: err.message });
-  }
+export async function deleteMapItem(req, res) {
+  await MapItem.findByIdAndDelete(req.params.id);
+  res.status(204).end();
 }
