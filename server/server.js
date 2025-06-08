@@ -12,9 +12,13 @@ import {
   removeItemFromInventory,
   getInventory,
 } from './inventory.js';
+import { getMapData } from './map/mapManager.js';
+
+// Import rotte modulari per equipment e mapItems
+import equipmentRoutes from './routes/equipment.js';
+import mapItemRoutes from './routes/mapitems.js';
 
 dotenv.config();
-
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
@@ -24,7 +28,7 @@ const port = 3000;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Middleware
+// Middleware statici e JSON
 app.use(express.static(path.join(__dirname, '../client')));
 app.use(express.json());
 
@@ -33,12 +37,12 @@ mongoose.connect(process.env.MONGODB_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 }).then(() => {
-  console.log('✅  Connesso a MongoDB Atlas');
+  console.log('✅     Connesso a MongoDB Atlas');
 }).catch((err) => {
-  console.error('❌  Errore connessione MongoDB:', err);
+  console.error('❌    Errore connessione MongoDB:', err);
 });
 
-// Route login base (può essere espansa in seguito)
+// Rotte base
 app.post('/login', (req, res) => {
   const { username, password } = req.body;
   if (username && password) {
@@ -48,10 +52,15 @@ app.post('/login', (req, res) => {
   }
 });
 
+// Monta le rotte modulari
+app.use('/equipment', equipmentRoutes);
+app.use('/mapitems', mapItemRoutes);
+
 // Socket.io multiplayer
 io.on('connection', (socket) => {
   console.log('?? Nuovo client connesso:', socket.id);
 
+  // Join iniziale del gioco
   socket.on('joinGame', async (username) => {
     let player = await Player.findOne({ username });
     if (!player) {
@@ -60,7 +69,9 @@ io.on('connection', (socket) => {
       player.socketId = socket.id;
       await player.save();
     }
-
+    // Invia la mappa iniziale (per ora fissa "start")
+    const mapData = await getMapData('start');
+    socket.emit('mapData', mapData);
     const players = await Player.find({});
     io.emit('playersUpdate', players.map(p => ({
       username: p.username,
@@ -70,13 +81,13 @@ io.on('connection', (socket) => {
     })));
   });
 
+  // Movimento del giocatore
   socket.on('move', async (pos) => {
     const player = await Player.findOne({ socketId: socket.id });
     if (player) {
       player.x = pos.x;
       player.y = pos.y;
       await player.save();
-
       const players = await Player.find({});
       io.emit('playersUpdate', players.map(p => ({
         username: p.username,
@@ -87,26 +98,24 @@ io.on('connection', (socket) => {
     }
   });
 
-  // ?? GESTIONE INVENTARIO
+  // GESTIONE INVENTARIO
   socket.on('getInventory', async () => {
     const inventory = await getInventory(socket.id);
     socket.emit('inventoryData', inventory);
   });
-
   socket.on('addItem', async (item) => {
     const inventory = await addItemToInventory(socket.id, item);
     socket.emit('inventoryData', inventory);
   });
-
   socket.on('removeItem', async (item) => {
     const inventory = await removeItemFromInventory(socket.id, item);
     socket.emit('inventoryData', inventory);
   });
 
+  // Disconnessione
   socket.on('disconnect', async () => {
     console.log('❌  Client disconnesso:', socket.id);
     await Player.deleteOne({ socketId: socket.id });
-
     const players = await Player.find({});
     io.emit('playersUpdate', players.map(p => ({
       username: p.username,
@@ -117,6 +126,7 @@ io.on('connection', (socket) => {
   });
 });
 
+// Avvio del server
 server.listen(port, () => {
   console.log(`?? Server avviato su http://localhost:${port}`);
 });

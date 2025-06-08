@@ -1,0 +1,15 @@
+{
+  "name": "start",
+  "width": 10,
+  "height": 8,
+  "grid": [
+    ["grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass"],
+    ["grass", "tree",  "tree",  "grass", "grass", "grass", "tree",  "tree",  "tree",  "grass"],
+    ["grass", "grass", "grass", "grass", "stone", "stone", "grass", "grass", "grass", "grass"],
+    ["grass", "tree",  "grass", "grass", "grass", "grass", "grass", "tree",  "grass", "grass"],
+    ["grass", "grass", "grass", "stone", "stone", "stone", "grass", "grass", "grass", "grass"],
+    ["grass", "tree",  "grass", "grass", "grass", "grass", "grass", "tree",  "grass", "grass"],
+    ["grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass"],
+    ["water", "water", "water", "water", "grass", "grass", "water", "water", "water", "water"]
+  ]
+}
