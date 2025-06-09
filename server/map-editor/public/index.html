@@ -6,6 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="stylesheet" href="styles.css" />
   <style>
+    /* Stili già esistenti */
     body {
       font-family: Arial, sans-serif;
       margin: 0;
@@ -15,9 +16,10 @@
     #editor-container {
       display: flex;
       gap: 20px;
-      max-width: 900px;
+      max-width: 1200px;
       margin: auto;
       flex-wrap: wrap;
+      align-items: flex-start;
     }
     #controls {
       width: 280px;
@@ -25,11 +27,11 @@
       padding: 15px;
       border-radius: 6px;
       box-shadow: 0 0 8px rgba(0,0,0,0.1);
-      overflow-y: auto;
-      height: 500px;
       box-sizing: border-box;
       display: flex;
       flex-direction: column;
+      height: 500px;
+      overflow-y: auto;
     }
     #controls h1, #controls h2 {
       margin-top: 0;
@@ -99,9 +101,20 @@
       border: 1px solid #ccc;
       border-radius: 6px;
       cursor: crosshair;
+      flex: 1 1 600px;
+      height: 480px;
       max-width: 100%;
-      height: auto;
-      flex-grow: 1;
+      box-sizing: border-box;
+    }
+    @media (max-width: 768px) {
+      #controls {
+        width: 100%;
+        height: auto;
+      }
+      canvas {
+        width: 100%;
+        height: auto;
+      }
     }
   </style>
 </head>
@@ -109,12 +122,16 @@
   <div id="editor-container">
     <div id="controls">
       <h1>Map Editor</h1>
+
       <label for="mapName">
         Map name:
         <input id="mapName" type="text" value="defaultMap" autocomplete="off" />
       </label>
+
       <button id="loadBtn" type="button">Load Items</button>
+
       <hr />
+
       <h2>Add New Item</h2>
       <form id="addForm">
         <input placeholder="x" name="x" type="number" min="0" required />
@@ -122,22 +139,33 @@
         <input placeholder="type" name="type" type="text" required autocomplete="off" />
         <button type="submit">Add Item</button>
       </form>
+
       <hr />
+
       <h2>Current Items</h2>
       <div id="itemsList">Carica una mappa per visualizzare gli elementi...</div>
+
+      <hr />
+
+      <h2>Create New Map</h2>
+      <form id="createMapForm">
+        <input id="newMapName" name="newMapName" placeholder="New map name" required />
+        <input id="newMapWidth" name="width" type="number" placeholder="Width" required min="1" />
+        <input id="newMapHeight" name="height" type="number" placeholder="Height" required min="1" />
+        <button type="submit">Create Map</button>
+      </form>
     </div>
+
     <canvas id="gridCanvas" width="640" height="480" tabindex="0" aria-label="Map grid"></canvas>
   </div>
 
   <script>
-    // Costanti e setup iniziale
     const canvas = document.getElementById('gridCanvas');
     const ctx = canvas.getContext('2d');
     const tileSize = 32;
     const rows = Math.floor(canvas.height / tileSize);
     const cols = Math.floor(canvas.width / tileSize);
 
-    // Disegna la griglia
     function drawGrid() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.strokeStyle = '#ccc';
@@ -156,7 +184,6 @@
       }
     }
 
-    // Disegna gli elementi sulla griglia
     function drawItems(items) {
       items.forEach(i => {
         ctx.fillStyle = 'green';
@@ -168,7 +195,6 @@
       });
     }
 
-    // Carica gli elementi dal server per la mappa specificata
     async function loadItems() {
       const map = document.getElementById('mapName').value.trim();
       if (!map) {
@@ -179,17 +205,14 @@
         const res = await fetch('/map-editor/api/mapcells/' + encodeURIComponent(map));
         if (!res.ok) throw new Error(`Errore nel caricamento degli elementi: ${res.status} ${res.statusText}`);
         const items = await res.json();
-
         const listDiv = document.getElementById('itemsList');
         listDiv.innerHTML = '';
-
         if (items.length === 0) {
           listDiv.textContent = 'Nessun elemento presente sulla mappa.';
         } else {
           items.forEach(i => {
             const div = document.createElement('div');
             div.textContent = `ID: ${i._id} | x: ${i.x}, y: ${i.y}, type: ${i.type}`;
-
             const delBtn = document.createElement('button');
             delBtn.textContent = 'Delete';
             delBtn.title = 'Elimina questo elemento';
@@ -203,7 +226,6 @@
                 await loadItems();
               }
             };
-
             div.appendChild(delBtn);
             listDiv.appendChild(div);
           });
@@ -215,7 +237,6 @@
       }
     }
 
-    // Aggiunge un nuovo elemento tramite POST
     async function addItem(e) {
       e.preventDefault();
       const form = e.target;
@@ -227,7 +248,6 @@
       const x = Number(form.x.value);
       const y = Number(form.y.value);
       const type = form.type.value.trim();
-
       if (isNaN(x) || x < 0 || isNaN(y) || y < 0) {
         alert('Inserisci coordinate valide (numeri positivi).');
         return;
@@ -236,9 +256,7 @@
         alert('Inserisci un tipo valido per l\'elemento.');
         return;
       }
-
       const data = { mapName: map, x, y, type, data: {} };
-
       try {
         const res = await fetch('/map-editor/api/mapcells', {
           method: 'POST',
@@ -253,7 +271,31 @@
       }
     }
 
-    // Clic sul canvas imposta le coordinate negli input
+    async function createMap(e) {
+      e.preventDefault();
+      const name = document.getElementById('newMapName').value.trim();
+      const width = parseInt(document.getElementById('newMapWidth').value, 10);
+      const height = parseInt(document.getElementById('newMapHeight').value, 10);
+      if (!name || isNaN(width) || isNaN(height) || width < 1 || height < 1) {
+        alert('Inserisci valori validi per nome, larghezza e altezza.');
+        return;
+      }
+      try {
+        const res = await fetch('/map-editor/api/maps', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, width, height })
+        });
+        if (!res.ok) throw new Error(`Errore nella creazione della mappa: ${res.status} ${res.statusText}`);
+        alert('Mappa creata con successo!');
+        document.getElementById('mapName').value = name;
+        document.getElementById('createMapForm').reset();
+        await loadItems();
+      } catch (err) {
+        alert(err.message);
+      }
+    }
+
     canvas.addEventListener('click', e => {
       const rect = canvas.getBoundingClientRect();
       const x = Math.floor((e.clientX - rect.left) / tileSize);
@@ -262,15 +304,11 @@
       document.querySelector('input[name="y"]').value = y;
     });
 
-    // Event listeners
     document.getElementById('loadBtn').addEventListener('click', loadItems);
     document.getElementById('addForm').addEventListener('submit', addItem);
+    document.getElementById('createMapForm').addEventListener('submit', createMap);
 
-    // Disegna griglia vuota all'avvio
     drawGrid();
-
-    // Carica elementi iniziali
-    //loadItems();  // Meglio lasciare a click utente
   </script>
 </body>
 </html>
