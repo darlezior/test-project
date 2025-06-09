@@ -1,5 +1,5 @@
 // server/map/mapManager.js
-import {  MapCell } from '../models/mapCell.js';
+import { MapCell } from '../models/mapCell.js';
 
 // Cache delle mappe in memoria: { mapName: [celle] }
 const mapCache = {};

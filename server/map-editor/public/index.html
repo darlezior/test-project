@@ -1,5 +1,4 @@
-<!DOCTYPE html>
-<html lang="en">
+<!DOCTYPE html><html lang="en">
 <head>
   <meta charset="UTF-8" />
   <title>Map Editor</title>
@@ -10,17 +9,16 @@
   <div id="editor-container">
     <div id="controls">
       <h1>Map Editor</h1>
-      <label for="mapName">
-        Map name:
-        <input id="mapName" type="text" value="defaultMap" autocomplete="off" />
+      <label for="mapSelect">
+        Map:
+        <select id="mapSelect"></select>
       </label>
       <button id="loadBtn" type="button">Load Items</button>
+      <button id="deleteMapBtn" type="button">Delete Map</button>
       <hr />
       <h2>Add New Item</h2>
       <form id="addForm">
-        <input placeholder="x" name="x" type="number" min="0" required />
-        <input placeholder="y" name="y" type="number" min="0" required />
-        <input placeholder="type" name="type" type="text" required autocomplete="off" />
+        <input placeholder="x" name="x" type="number" min="0" required />        <input placeholder="y" name="y" type="number" min="0" required />        <input placeholder="type" name="type" type="text" required autocomplete="off" />
         <button type="submit">Add Item</button>
       </form>
       <hr />
@@ -36,8 +34,8 @@
       </form>
     </div>
     <canvas id="gridCanvas" width="640" height="480" tabindex="0" aria-label="Map grid"></canvas>
+    <input id="mapName" type="hidden" value="defaultMap" />
   </div>
-
   <!-- Script Modules -->
   <script src="grid.js"></script>
   <script src="items.js"></script>

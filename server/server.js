@@ -19,6 +19,7 @@ import { getMapData } from './map/mapManager.js';
 import mapEditorRoutes from './map-editor/routes.js';
 import equipmentRoutes from './routes/equipment.js';
 import mapItemRoutes from './routes/mapitems.js';
+import newMapRoutes from './map-editor/newmap/routes.js'; // nuove rotte per creazione mappe
 
 dotenv.config();
 
@@ -31,27 +32,31 @@ const port = process.env.PORT || 3000;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Middleware
+// Middleware statici e parsers
 app.use(express.static(path.join(__dirname, '../client')));
 app.use(express.json());
 
 // UI statica per il Map Editor (frontend)
 app.use('/map-editor', express.static(path.join(__dirname, 'map-editor/public')));
 
+// Log per ogni richiesta a /api/maps
+app.use('/api/maps', (req, res, next) => {
+  console.log(`➡️  Richiesta in arrivo: ${req.method} ${req.originalUrl}`);
+  next();
+});
+
 // --- ROTTE API MODULARI ---
 app.use('/map-editor/api', mapEditorRoutes);
 app.use('/equipment', equipmentRoutes);
 app.use('/mapitems', mapItemRoutes);
+app.use('/api/maps', newMapRoutes); // Monta endpoint POST/GET per creazione mappe
 
-// Connessione a MongoDB Atlas
+// Connessione a MongoDB Atlas (senza opzioni deprecate)
 mongoose
-  .connect(process.env.MONGODB_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  })
-  .then(() => console.log('✅  Connesso a MongoDB Atlas'))
+  .connect(process.env.MONGODB_URI)
+  .then(() => console.log('✅     Connesso a MongoDB Atlas'))
   .catch((err) => {
-    console.error('❌  Errore connessione MongoDB:', err);
+    console.error('❌     Errore connessione MongoDB:', err);
     process.exit(1);
   });
 
@@ -61,7 +66,6 @@ app.post('/login', (req, res) => {
   if (!username || !password) {
     return res.status(400).json({ success: false, message: 'Credenziali mancanti' });
   }
-
   // TODO: Verifica credenziali reale
   res.json({ success: true, username });
 });
@@ -74,7 +78,6 @@ io.on('connection', (socket) => {
   socket.on('joinGame', async (username) => {
     try {
       let player = await Player.findOne({ username });
-
       if (!player) {
         player = await Player.create({
           username,
@@ -166,7 +169,7 @@ io.on('connection', (socket) => {
   // Evento: disconnessione client
   socket.on('disconnect', async () => {
     try {
-      console.log('❌ Client disconnesso:', socket.id);
+      console.log('❌    Client disconnesso:', socket.id);
       await Player.deleteOne({ socketId: socket.id });
 
       const players = await Player.find({});
