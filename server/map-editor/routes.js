@@ -1,6 +1,6 @@
 import express from 'express';
 import { Element } from '../models/element.js';
-import MapCell from '../models/mapcell.js'; // attenzione: export default nel modello
+import MapCell from '../models/mapCell.js'; // attenzione: export default nel modello
 
 const router = express.Router();
 
