@@ -13,13 +13,6 @@ import {
   removeItemFromInventory,
   getInventory,
 } from './inventory.js';
-import { getMapData } from './map/mapManager.js';
-
-// Rotte modulari
-import mapEditorRoutes from './map-editor/routes.js';
-import equipmentRoutes from './routes/equipment.js';
-import mapItemRoutes from './routes/mapitems.js';
-import newMapRoutes from './map-editor/newmap/routes.js'; // nuove rotte per creazione mappe
 
 dotenv.config();
 
@@ -36,45 +29,28 @@ const __dirname = path.dirname(__filename);
 app.use(express.static(path.join(__dirname, '../client')));
 app.use(express.json());
 
-// UI statica per il Map Editor (frontend)
-app.use('/map-editor', express.static(path.join(__dirname, 'map-editor/public')));
-
-// Log per ogni richiesta a /api/maps
-app.use('/api/maps', (req, res, next) => {
-  console.log(`➡️  Richiesta in arrivo: ${req.method} ${req.originalUrl}`);
-  next();
-});
-
-// --- ROTTE API MODULARI ---
-app.use('/map-editor/api', mapEditorRoutes);
-app.use('/equipment', equipmentRoutes);
-app.use('/mapitems', mapItemRoutes);
-app.use('/api/maps', newMapRoutes); // Monta endpoint POST/GET per creazione mappe
-
-// Connessione a MongoDB Atlas (senza opzioni deprecate)
+// Connessione a MongoDB Atlas
 mongoose
   .connect(process.env.MONGODB_URI)
-  .then(() => console.log('✅     Connesso a MongoDB Atlas'))
+  .then(() => console.log('✅      Connesso a MongoDB Atlas'))
   .catch((err) => {
-    console.error('❌     Errore connessione MongoDB:', err);
+    console.error('❌      Errore connessione MongoDB:', err);
     process.exit(1);
   });
 
-// --- API BASE: login semplice (TODO: migliorare sicurezza) ---
+// API BASE: login semplice
 app.post('/login', (req, res) => {
   const { username, password } = req.body;
   if (!username || !password) {
     return res.status(400).json({ success: false, message: 'Credenziali mancanti' });
   }
-  // TODO: Verifica credenziali reale
   res.json({ success: true, username });
 });
 
-// --- SOCKET.IO: gestione multiplayer ---
+// SOCKET.IO: gestione multiplayer
 io.on('connection', (socket) => {
   console.log('?? Nuovo client connesso:', socket.id);
 
-  // Evento: ingresso in gioco
   socket.on('joinGame', async (username) => {
     try {
       let player = await Player.findOne({ username });
@@ -90,9 +66,7 @@ io.on('connection', (socket) => {
         await player.save();
       }
 
-      const mapData = await getMapData('start');
-      socket.emit('mapData', mapData);
-
+      // Invia tutti i player attivi
       const players = await Player.find({});
       io.emit('playersUpdate', players.map((p) => ({
         username: p.username,
@@ -106,13 +80,11 @@ io.on('connection', (socket) => {
     }
   });
 
-  // Evento: movimento del personaggio
   socket.on('move', async (pos) => {
     try {
       if (!pos || typeof pos.x !== 'number' || typeof pos.y !== 'number') {
         return socket.emit('error', { message: 'Posizione non valida' });
       }
-
       const player = await Player.findOne({ socketId: socket.id });
       if (player) {
         player.x = pos.x;
@@ -133,7 +105,6 @@ io.on('connection', (socket) => {
     }
   });
 
-  // Evento: richiesta inventario
   socket.on('getInventory', async () => {
     try {
       const inventory = await getInventory(socket.id);
@@ -144,7 +115,6 @@ io.on('connection', (socket) => {
     }
   });
 
-  // Evento: aggiunta oggetto all'inventario
   socket.on('addItem', async (item) => {
     try {
       const inventory = await addItemToInventory(socket.id, item);
@@ -155,7 +125,6 @@ io.on('connection', (socket) => {
     }
   });
 
-  // Evento: rimozione oggetto dall'inventario
   socket.on('removeItem', async (item) => {
     try {
       const inventory = await removeItemFromInventory(socket.id, item);
@@ -166,12 +135,10 @@ io.on('connection', (socket) => {
     }
   });
 
-  // Evento: disconnessione client
   socket.on('disconnect', async () => {
     try {
-      console.log('❌    Client disconnesso:', socket.id);
+      console.log('❌     Client disconnesso:', socket.id);
       await Player.deleteOne({ socketId: socket.id });
-
       const players = await Player.find({});
       io.emit('playersUpdate', players.map((p) => ({
         username: p.username,
@@ -185,7 +152,6 @@ io.on('connection', (socket) => {
   });
 });
 
-// Avvio server
 server.listen(port, () => {
   console.log(`?? Server avviato su http://localhost:${port}`);
 });

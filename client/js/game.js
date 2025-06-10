@@ -6,13 +6,12 @@ import { log } from './logger.js';
 
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
-
 let players = {};                         // Stato degli altri giocatori
-let localPlayerName = '';                // Username del giocatore locale
-let localPosition = { x: 160, y: 120 };  // Posizione del giocatore locale
-let localInventory = [];                 // Inventario del giocatore locale
-
-const socket = io();
+let localPlayerName = '';                 // Username del giocatore locale
+let localPosition = { x: 160, y: 120 };   // Posizione del giocatore locale
+let localInventory = [];                  // Inventario del giocatore locale
+let localSocketId = null;                 // ID del socket del giocatore locale
+const socket = io();                      // Connessione al server tramite Socket.IO
 
 // Costanti mappa
 const GRID_COLS = 20;
@@ -43,25 +42,30 @@ window.addEventListener('resize', resizeCanvas);
 resizeCanvas();
 
 /* Ricezione aggiornamento lista giocatori */
+socket.on('connect', () => {
+  localSocketId = socket.id; // Memorizza l'ID del socket locale quando il client si connette
+});
+
 socket.on('playersUpdate', (serverPlayers) => {
-  players = {};
+  players = {}; // Pulisce la lista dei giocatori
   for (const p of serverPlayers) {
-    if (p.socketId === socket.id) {
-      localInventory = p.inventory || localInventory;
-      localPosition = { x: p.x, y: p.y }; // Aggiorna posizione locale dal server
-      updateInventoryUI();
-    } else {
-      players[p.socketId] = p;
+    players[p.socketId] = p; // Salva il giocatore nel dizionario
+
+    // Aggiorna solo il giocatore locale
+    if (p.socketId === localSocketId) {
+      localInventory = p.inventory || localInventory;  // Aggiorna inventario
+      localPosition = { x: p.x, y: p.y }; // Aggiorna la posizione
+      updateInventoryUI();  // Rende visibile l'inventario
     }
   }
-  drawPlayers();
+  drawPlayers(); // Disegna tutti i giocatori
 });
 
 /* Ricezione inventario aggiornato */
 socket.on('inventoryData', (inventory) => {
   if (Array.isArray(inventory)) {
-    localInventory = inventory;
-    updateInventoryUI();
+    localInventory = inventory;  // Aggiorna inventario
+    updateInventoryUI();  // Rende visibile l'inventario
   }
 });
 
@@ -84,36 +88,31 @@ function drawMapGrid() {
 
 /* Disegna tutti i giocatori */
 function drawPlayers() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  drawMapGrid();
+  ctx.clearRect(0, 0, canvas.width, canvas.height);  // Pulisce il canvas
+  drawMapGrid();  // Disegna la griglia
 
-  // Altri giocatori
+  // Disegna gli altri giocatori
   for (const id in players) {
     const p = players[id];
-    drawCharacter(p.x, p.y, p.username, false);
+    const isLocal = id === localSocketId;  // Controlla se è il giocatore locale
+    drawCharacter(p.x, p.y, p.username, isLocal);  // Disegna il personaggio
   }
-
-  // Player locale (disegnato sempre)
-  drawCharacter(localPosition.x, localPosition.y, localPlayerName, true);
 }
 
 /* Disegna un personaggio (rettangolo corpo, cerchio testa, nome) */
 function drawCharacter(x, y, username, isLocal) {
-  ctx.fillStyle = isLocal ? '#00ff00' : '#0099ff';
+  ctx.fillStyle = isLocal ? '#00ff00' : '#0099ff';  // Colore verde per il giocatore locale
   ctx.fillRect(x - 7, y, 14, 28); // Corpo
-
-  ctx.beginPath(); // Testa
+  ctx.beginPath();  // Testa
   ctx.arc(x, y - 10, 10, 0, Math.PI * 2);
   ctx.fillStyle = '#ffcc99';
   ctx.fill();
-
   // Occhi
   ctx.fillStyle = '#000';
   ctx.beginPath();
   ctx.arc(x - 4, y - 10, 2, 0, Math.PI * 2);
   ctx.arc(x + 4, y - 10, 2, 0, Math.PI * 2);
   ctx.fill();
-
   // Nome
   ctx.fillStyle = '#fff';
   ctx.font = '14px monospace';
@@ -128,6 +127,7 @@ function gameLoop() {
   const dx = keyDir.dx || joyDir.dx;
   const dy = keyDir.dy || joyDir.dy;
 
+  // Aggiorna posizione se c'è movimento
   if (dx !== 0 || dy !== 0) {
     localPosition.x += dx * 2;
     localPosition.y += dy * 2;
@@ -137,25 +137,22 @@ function gameLoop() {
     localPosition.y = Math.min(Math.max(localPosition.y, 10), canvas.height - 30);
 
     const now = Date.now();
-    if (
-      (localPosition.x !== lastSentPosition.x || localPosition.y !== lastSentPosition.y) &&
-      (now - lastMoveSentTime > MOVE_SEND_INTERVAL)
-    ) {
-      socket.emit('move', localPosition);
+    // Invio posizione solo se è cambiata e se sono passati almeno 200 ms
+    if ((localPosition.x !== lastSentPosition.x || localPosition.y !== lastSentPosition.y) &&
+        (now - lastMoveSentTime > MOVE_SEND_INTERVAL)) {
+      socket.emit('move', localPosition);  // Manda la nuova posizione al server
       lastSentPosition = { ...localPosition };
       lastMoveSentTime = now;
     }
   }
 
   const now = Date.now();
-
   // Pulsante A
   if (isButtonAPressed() && now - lastButtonATime > BUTTON_COOLDOWN) {
     log('Premuto pulsante A - azione');
     socket.emit('actionA');
     lastButtonATime = now;
   }
-
   // Pulsante B
   if (isButtonBPressed() && now - lastButtonBTime > BUTTON_COOLDOWN) {
     log('Premuto pulsante B - indietro');
@@ -163,8 +160,8 @@ function gameLoop() {
     lastButtonBTime = now;
   }
 
-  drawPlayers();
-  requestAnimationFrame(gameLoop);
+  drawPlayers();  // Disegna tutti i giocatori
+  requestAnimationFrame(gameLoop);  // Loop del gioco
 }
 
 /* Aggiorna UI inventario */
@@ -186,10 +183,11 @@ function updateInventoryUI() {
 /* Avvia il gioco dopo il login */
 export function startGame(username) {
   localPlayerName = username;
-  socket.emit('joinGame', username);
+  socket.emit('joinGame', username);  // Manda al server il nome del giocatore
   log(`Avvio gioco per utente: ${username}`);
-  socket.emit('getInventory');
+  socket.emit('getInventory');  // Richiedi inventario al server
 
+  // Gestione visibilità inventario
   const btnInventory = document.getElementById('btnInventory');
   const inventoryDiv = document.getElementById('inventory');
   btnInventory.addEventListener('click', () => {
@@ -197,5 +195,5 @@ export function startGame(username) {
     inventoryDiv.style.display = inventoryVisible ? 'block' : 'none';
   });
 
-  gameLoop();
+  gameLoop();  // Inizia il loop di gioco
 }
