@@ -1,98 +1,52 @@
-// maps.js - Gestisce la creazione, selezione e cancellazione delle mappe
+// maps.js - gestione fetch API per mappe
 
-// ✅ Percorso corretto per le chiamate API al backend
-const API_PREFIX = '/api/maps';
+export let currentMap = null;
 
-// ?? Carica la lista delle mappe nella dropdown all'avvio
-async function loadMapList() {
-  try {
-    const res = await fetch(API_PREFIX); // ✅ Chiamata corretta alle API
-    if (!res.ok) throw new Error(`Errore caricamento lista mappe: ${res.status}`);
-    const maps = await res.json();
-
-    // Riempie il select con i nomi delle mappe
-    const select = document.getElementById('mapSelect');
-    select.innerHTML = '';
-    maps.forEach(map => {
-      const option = document.createElement('option');
-      option.value = map.name;
-      option.textContent = map.name;
-      select.appendChild(option);
-    });
-
-    // Se ci sono mappe, seleziona la prima e carica i relativi elementi
-    if (maps.length > 0) {
-      select.value = maps[0].name;
-      document.getElementById('mapName').value = maps[0].name;
-      await loadItems(); // ⚠️ Assicurati che loadItems() sia definito
-    }
-  } catch (err) {
-    alert(err.message);
-  }
+export async function fetchMaps() {
+  const res = await fetch('/api/maps');
+  if (!res.ok) throw new Error('Errore caricamento mappe');
+  return await res.json();
 }
 
-// ➕ Crea una nuova mappa inviando nome, larghezza e altezza
-async function createMap(e) {
-  e.preventDefault();
-
-  // Ottiene i dati dal form
-  const name = document.getElementById('newMapName').value.trim();
-  const width = parseInt(document.getElementById('newMapWidth').value, 10);
-  const height = parseInt(document.getElementById('newMapHeight').value, 10);
-
-  if (!name || isNaN(width) || isNaN(height) || width < 1 || height < 1) {
-    return alert('Valori non validi.');
-  }
-
-  try {
-    const res = await fetch(API_PREFIX, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, width, height })
-    });
-    if (!res.ok) throw new Error(`Errore creazione: ${res.status}`);
-    alert('Mappa creata!');
-
-    // Reset del form e aggiornamento lista mappe
-    document.getElementById('createMapForm').reset();
-    await loadMapList();
-    document.getElementById('mapSelect').value = name;
-    document.getElementById('mapName').value = name;
-    await loadItems();
-  } catch (err) {
-    alert(err.message);
-  }
+export async function fetchMap(name) {
+  const res = await fetch(`/api/maps/${name}`);
+  if (!res.ok) throw new Error('Mappa non trovata');
+  return await res.json();
 }
 
-// ??️ Cancella la mappa selezionata
-async function deleteMap() {
-  const name = document.getElementById('mapSelect').value;
-  if (!name) return alert('Seleziona una mappa da cancellare.');
-  if (!confirm(`Sei sicuro di voler cancellare la mappa "${name}"?`)) return;
-
-  try {
-    const res = await fetch(`${API_PREFIX}/${name}`, {
-      method: 'DELETE'
-    });
-    if (!res.ok) throw new Error(`Errore cancellazione: ${res.status}`);
-    alert('Mappa cancellata.');
-    await loadMapList();
-  } catch (err) {
-    alert(err.message);
+export async function createMap(name, width, height) {
+  const res = await fetch('/api/maps', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name, width, height }),
+  });
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.error || 'Errore creazione mappa');
   }
+  return await res.json();
 }
 
-// ?? Aggiorna input text con il nome mappa selezionata e carica i suoi elementi
-function handleMapSelection() {
-  const name = document.getElementById('mapSelect').value;
-  document.getElementById('mapName').value = name;
-  loadItems(); // ⚠️ Assicurati che loadItems() sia definito
+export async function updateMap(name, data) {
+  const res = await fetch(`/api/maps/${name}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.error || 'Errore aggiornamento mappa');
+  }
+  return await res.json();
 }
 
-// ▶️ Setup iniziale al caricamento della pagina
-window.addEventListener('DOMContentLoaded', () => {
-  loadMapList();
-  document.getElementById('createMapForm').addEventListener('submit', createMap);
-  document.getElementById('deleteMapBtn').addEventListener('click', deleteMap);
-  document.getElementById('mapSelect').addEventListener('change', handleMapSelection);
-});
+export async function deleteMap(name) {
+  const res = await fetch(`/api/maps/${name}`, {
+    method: 'DELETE',
+  });
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.error || 'Errore cancellazione mappa');
+  }
+  return true;
+}

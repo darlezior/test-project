@@ -13,13 +13,15 @@ import {
   removeItemFromInventory,
   getInventory,
 } from './inventory.js';
-import { getMapData } from './map/mapManager.js';
+
+// Rimuovo vecchio import mapManager (vecchio sistema mappa)
+// import { getMapData } from './map/mapManager.js';
 
 // Rotte modulari
 import mapEditorRoutes from './map-editor/routes.js';
 import equipmentRoutes from './routes/equipment.js';
 import mapItemRoutes from './routes/mapitems.js';
-import newMapRoutes from './map-editor/newmap/routes.js'; // nuove rotte per creazione mappe
+import newMapRoutes from './map-editor/newmap/routes.js'; // nuove rotte creazione mappe
 
 dotenv.config();
 
@@ -36,12 +38,18 @@ const __dirname = path.dirname(__filename);
 app.use(express.static(path.join(__dirname, '../client')));
 app.use(express.json());
 
-// UI statica per il Map Editor (frontend)
+// Middleware generale per loggare tutte le richieste (metodo + url)
+app.use((req, res, next) => {
+  console.log(`➡️  Richiesta: ${req.method} ${req.originalUrl}`);
+  next();
+});
+
+// Serve la UI statica per il Map Editor (frontend)
 app.use('/map-editor', express.static(path.join(__dirname, 'map-editor/public')));
 
-// Log per ogni richiesta a /api/maps
+// Log per ogni richiesta a /api/maps (info extra specifica)
 app.use('/api/maps', (req, res, next) => {
-  console.log(`➡️  Richiesta in arrivo: ${req.method} ${req.originalUrl}`);
+  console.log(`➡️  Richiesta specifica a /api/maps: ${req.method} ${req.originalUrl}`);
   next();
 });
 
@@ -49,14 +57,22 @@ app.use('/api/maps', (req, res, next) => {
 app.use('/map-editor/api', mapEditorRoutes);
 app.use('/equipment', equipmentRoutes);
 app.use('/mapitems', mapItemRoutes);
-app.use('/api/maps', newMapRoutes); // Monta endpoint POST/GET per creazione mappe
+
+// Nuovo sistema mappe: rotte per creazione, modifica, cancellazione mappe
+app.use('/api/maps', newMapRoutes);
+
+// Middleware 404 per richieste non gestite e log
+app.use((req, res) => {
+  console.log(`❌   404 NOT FOUND: ${req.method} ${req.originalUrl}`);
+  res.status(404).json({ error: 'Endpoint non trovato' });
+});
 
 // Connessione a MongoDB Atlas (senza opzioni deprecate)
 mongoose
   .connect(process.env.MONGODB_URI)
-  .then(() => console.log('✅     Connesso a MongoDB Atlas'))
+  .then(() => console.log('✅        Connesso a MongoDB Atlas'))
   .catch((err) => {
-    console.error('❌     Errore connessione MongoDB:', err);
+    console.error('❌        Errore connessione MongoDB:', err);
     process.exit(1);
   });
 
@@ -72,7 +88,7 @@ app.post('/login', (req, res) => {
 
 // --- SOCKET.IO: gestione multiplayer ---
 io.on('connection', (socket) => {
-  console.log('?? Nuovo client connesso:', socket.id);
+  console.log('✨  Nuovo client connesso:', socket.id);
 
   // Evento: ingresso in gioco
   socket.on('joinGame', async (username) => {
@@ -90,9 +106,10 @@ io.on('connection', (socket) => {
         await player.save();
       }
 
-      const mapData = await getMapData('start');
-      socket.emit('mapData', mapData);
+      // Nel vecchio metodo si usava getMapData, ora si dovrebbe gestire mappa lato client
+      // oppure aggiungere qui l'invio dati mappa se serve (da implementare lato nuovo sistema)
 
+      // Per ora emitto solo playersUpdate
       const players = await Player.find({});
       io.emit('playersUpdate', players.map((p) => ({
         username: p.username,
@@ -112,13 +129,11 @@ io.on('connection', (socket) => {
       if (!pos || typeof pos.x !== 'number' || typeof pos.y !== 'number') {
         return socket.emit('error', { message: 'Posizione non valida' });
       }
-
       const player = await Player.findOne({ socketId: socket.id });
       if (player) {
         player.x = pos.x;
         player.y = pos.y;
         await player.save();
-
         const players = await Player.find({});
         io.emit('playersUpdate', players.map((p) => ({
           username: p.username,
@@ -169,9 +184,8 @@ io.on('connection', (socket) => {
   // Evento: disconnessione client
   socket.on('disconnect', async () => {
     try {
-      console.log('❌    Client disconnesso:', socket.id);
+      console.log('❌  Client disconnesso:', socket.id);
       await Player.deleteOne({ socketId: socket.id });
-
       const players = await Player.find({});
       io.emit('playersUpdate', players.map((p) => ({
         username: p.username,
@@ -187,5 +201,5 @@ io.on('connection', (socket) => {
 
 // Avvio server
 server.listen(port, () => {
-  console.log(`?? Server avviato su http://localhost:${port}`);
+  console.log(`✅ Server avviato su http://localhost:${port}`);
 });

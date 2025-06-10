@@ -12,12 +12,25 @@ function drawItems(items) {
 }
 
 async function loadItems() {
-  const map = document.getElementById('mapName').value.trim();
-  if (!map) return alert('Inserisci il nome della mappa!');
+  const mapName = document.getElementById('mapName').value.trim();
+  if (!mapName) return alert('Inserisci il nome della mappa!');
+
   try {
-    const res = await fetch('/map-editor/api/mapcells/' + encodeURIComponent(map));
-    if (!res.ok) throw new Error(`Errore nel caricamento: ${res.status} ${res.statusText}`);
-    const items = await res.json();
+    // ?? Recupera i dati della mappa (incluse dimensioni)
+    const mapRes = await fetch('/map-editor/api/maps/' + encodeURIComponent(mapName));
+    if (!mapRes.ok) throw new Error(`Errore nel caricamento mappa: ${mapRes.status} ${mapRes.statusText}`);
+    const mapData = await mapRes.json();
+    const { width, height } = mapData;
+
+    // ?? Applica le nuove dimensioni alla griglia
+    updateGridSize(width, height);
+
+    // ?? Recupera gli elementi della mappa
+    const itemsRes = await fetch('/map-editor/api/mapcells/' + encodeURIComponent(mapName));
+    if (!itemsRes.ok) throw new Error(`Errore nel caricamento elementi: ${itemsRes.status} ${itemsRes.statusText}`);
+    const items = await itemsRes.json();
+
+    // ?? Pulisce la lista visiva e inserisce i dati
     const listDiv = document.getElementById('itemsList');
     listDiv.innerHTML = '';
     if (items.length === 0) {
@@ -39,8 +52,11 @@ async function loadItems() {
         listDiv.appendChild(div);
       });
     }
+
+    // ?? Disegna griglia e elementi aggiornati
     drawGrid();
     drawItems(items);
+
   } catch (err) {
     alert(err.message);
   }

@@ -1,30 +1,60 @@
-<!DOCTYPE html><html lang="en">
+<!DOCTYPE html>
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <title>Map Editor</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="stylesheet" href="editor.css" />
+  <style>
+    #gridCanvas {
+      border: 1px solid #333;
+      cursor: pointer;
+      background: #f0f0f0;
+    }
+    #controls {
+      max-width: 300px;
+      float: left;
+      padding-right: 10px;
+    }
+    #cellTypeSelect {
+      width: 100%;
+      margin-bottom: 10px;
+    }
+    #itemsList {
+      max-height: 150px;
+      overflow-y: auto;
+      background: #fff;
+      border: 1px solid #ccc;
+      padding: 5px;
+      font-family: monospace;
+      font-size: 0.9em;
+    }
+  </style>
 </head>
 <body>
-  <div id="editor-container">
+  <div id="editor-container" style="display:flex;">
     <div id="controls">
       <h1>Map Editor</h1>
-      <label for="mapSelect">
-        Map:
+      <label for="mapSelect">Map:
         <select id="mapSelect"></select>
       </label>
-      <button id="loadBtn" type="button">Load Items</button>
-      <button id="deleteMapBtn" type="button">Delete Map</button>
+      <button id="loadBtn" type="button">Load Map</button>
+      <button id="deleteMapBtn" type="button" style="color:red;">Delete Map</button>
+      <button id="saveMapBtn" type="button" style="margin-top:10px;">Save Map</button>
+
       <hr />
-      <h2>Add New Item</h2>
-      <form id="addForm">
-        <input placeholder="x" name="x" type="number" min="0" required />        <input placeholder="y" name="y" type="number" min="0" required />        <input placeholder="type" name="type" type="text" required autocomplete="off" />
-        <button type="submit">Add Item</button>
-      </form>
+
+      <h2>Cell Type</h2>
+      <select id="cellTypeSelect">
+        <option value="empty">Empty</option>
+        <option value="grass">Grass</option>
+        <option value="water">Water</option>
+        <option value="mountain">Mountain</option>
+        <option value="forest">Forest</option>
+      </select>
+
       <hr />
-      <h2>Current Items</h2>
-      <div id="itemsList">Carica una mappa per visualizzare gli elementi...</div>
-      <hr />
+
       <h2>Create New Map</h2>
       <form id="createMapForm">
         <input id="newMapName" name="newMapName" placeholder="New map name" required />
@@ -32,14 +62,18 @@
         <input id="newMapHeight" name="height" type="number" placeholder="Height" required min="1" />
         <button type="submit">Create Map</button>
       </form>
+
+      <hr />
+
+      <h2>Current Map Info</h2>
+      <div id="itemsList">Nessuna mappa caricata</div>
     </div>
+
     <canvas id="gridCanvas" width="640" height="480" tabindex="0" aria-label="Map grid"></canvas>
-    <input id="mapName" type="hidden" value="defaultMap" />
   </div>
-  <!-- Script Modules -->
-  <script src="grid.js"></script>
-  <script src="items.js"></script>
-  <script src="maps.js"></script>
-  <script src="init.js"></script>
+
+  <script type="module" src="maps.js"></script>
+  <script type="module" src="grid.js"></script>
+  <script type="module" src="init.js"></script>
 </body>
 </html>
