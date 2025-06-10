@@ -1,3 +1,4 @@
+// client/js/game.js
 import { io } from "https://cdn.socket.io/4.6.1/socket.io.esm.min.js";
 import { getMovementDirection, isButtonAPressed, isButtonBPressed } from './input.js';
 import { getJoystickDirection } from './joystick.js';
@@ -47,6 +48,7 @@ socket.on('playersUpdate', (serverPlayers) => {
   for (const p of serverPlayers) {
     if (p.socketId === socket.id) {
       localInventory = p.inventory || localInventory;
+      localPosition = { x: p.x, y: p.y }; // Aggiorna posizione locale dal server
       updateInventoryUI();
     } else {
       players[p.socketId] = p;
@@ -84,12 +86,14 @@ function drawMapGrid() {
 function drawPlayers() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   drawMapGrid();
+
   // Altri giocatori
   for (const id in players) {
     const p = players[id];
     drawCharacter(p.x, p.y, p.username, false);
   }
-  // Giocatore locale
+
+  // Player locale (disegnato sempre)
   drawCharacter(localPosition.x, localPosition.y, localPlayerName, true);
 }
 
@@ -167,12 +171,10 @@ function gameLoop() {
 function updateInventoryUI() {
   const container = document.getElementById('inventory-items');
   container.innerHTML = '';
-
   if (localInventory.length === 0) {
     container.innerHTML = '<div class="inventory-item">Vuoto</div>';
     return;
   }
-
   for (const item of localInventory) {
     const div = document.createElement('div');
     div.className = 'inventory-item';
@@ -186,12 +188,10 @@ export function startGame(username) {
   localPlayerName = username;
   socket.emit('joinGame', username);
   log(`Avvio gioco per utente: ${username}`);
-
   socket.emit('getInventory');
 
   const btnInventory = document.getElementById('btnInventory');
   const inventoryDiv = document.getElementById('inventory');
-
   btnInventory.addEventListener('click', () => {
     inventoryVisible = !inventoryVisible;
     inventoryDiv.style.display = inventoryVisible ? 'block' : 'none';
