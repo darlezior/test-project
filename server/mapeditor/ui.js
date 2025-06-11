@@ -28,9 +28,9 @@ export function setupUI() {
   });
 
   async function loadMapList() {
-    const maps = await getMaps();
-    selector.innerHTML = maps.map((m) => `<option>${m}</option>`).join('');
-  }
+  const maps = await getMaps();
+  selector.innerHTML = maps.map((m) => `<option value="${m.name}">${m.name}</option>`).join('');
+}
 
   loadMapList();
 }
