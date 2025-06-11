@@ -33,7 +33,7 @@ const __dirname = path.dirname(__filename);
 // ?? Middleware statici e parsers
 app.use(express.static(path.join(__dirname, '../client')));
 app.use(express.json());
-app.use('/editor', express.static(path.join(__dirname, 'mapeditor')));
+app.use('/mapeditor', express.static(path.join(__dirname, 'mapeditor')));
 // ===============================
 // ?? Connessione MongoDB
 // ===============================
