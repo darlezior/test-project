@@ -1,0 +1,25 @@
+/* ===============================
+?? Stile base per il Map Editor
+=============================== */
+body {
+  font-family: sans-serif;
+  padding: 1rem;
+  background: #f4f4f4;
+}
+#gridContainer {
+  display: grid;
+  gap: 1px;
+  margin-top: 1rem;
+}
+.cell {
+  width: 20px;
+  height: 20px;
+  background: #ccc;
+  border: 1px solid #aaa;
+  text-align: center;
+  cursor: pointer;
+}
+.cell.active {
+  background: #4caf50;
+  color: white;
+}

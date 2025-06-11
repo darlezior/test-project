@@ -1,0 +1,31 @@
+<!-- ===============================
+??️ Map Editor — Interfaccia Web
+=============================== -->
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <title>Map Editor</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <h1>Map Editor</h1>
+
+  <form id="mapForm">
+    <input type="text" id="mapName" placeholder="Nome Mappa" required>
+    <input type="number" id="mapWidth" placeholder="Larghezza" required>
+    <input type="number" id="mapHeight" placeholder="Altezza" required>
+    <button type="submit">Crea / Salva</button>
+  </form>
+
+  <select id="mapSelector"></select>
+  <button id="loadMapBtn">Carica Mappa</button>
+
+  <div id="gridContainer"></div>
+
+  <script src="grid.js"></script>
+  <script src="api.js"></script>
+  <script src="ui.js"></script>
+  <script src="init.js"></script>
+</body>
+</html>
