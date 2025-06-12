@@ -11,37 +11,52 @@ import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 
 import { Player } from './models/player.js';
+import { GameMap } from './models/map.js';
 import {
   addItemToInventory,
   removeItemFromInventory,
   getInventory,
 } from './inventory.js';
-import { GameMap } from './models/map.js';
+
+import itemsRoutes from './mapeditor/items/itemRoutes.js'; // ✅ Rotte per oggetti mappa
+
+// ===============================
 // ?? Variabili d'ambiente
+// ===============================
 dotenv.config();
 
-// ?? Setup Express, HTTP server, Socket.IO
+// ===============================
+// ?? Setup Express + HTTP + Socket.IO
+// ===============================
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 const port = process.env.PORT || 3000;
 
-// ??️ Percorsi per compatibilità ESM
+// ===============================
+// ?? Compatibilità ESM (dirname, filename)
+// ===============================
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// ?? Middleware statici e parsers
-app.use(express.static(path.join(__dirname, '../client')));
-app.use(express.json());
-app.use('/mapeditor', express.static(path.join(__dirname, 'mapeditor')));
 // ===============================
-// ?? Connessione MongoDB
+// ??️ Middleware statici e parsers
+// ===============================
+app.use(express.json());
+app.use(express.static(path.join(__dirname, '../client')));
+app.use('/mapeditor', express.static(path.join(__dirname, 'mapeditor')));
+
+// ✅ API REST
+app.use('/api/items', itemsRoutes);
+
+// ===============================
+// ?? Connessione a MongoDB Atlas
 // ===============================
 mongoose
   .connect(process.env.MONGODB_URI)
-  .then(() => console.log('✅ Connesso a MongoDB Atlas'))
+  .then(() => console.log('✅  Connesso a MongoDB Atlas'))
   .catch((err) => {
-    console.error('❌ Errore connessione MongoDB:', err);
+    console.error('❌  Errore connessione MongoDB:', err);
     process.exit(1);
   });
 
@@ -57,7 +72,7 @@ app.post('/login', (req, res) => {
 });
 
 // ===============================
-// ??️ API Map Editor 
+// ??️ API Map Editor (mappe)
 // ===============================
 app.get('/api/maps', async (req, res) => {
   const maps = await GameMap.find({}, 'name');
@@ -86,22 +101,18 @@ app.post('/api/maps', async (req, res) => {
   await GameMap.create({ name, width, height, grid });
   res.json({ success: true, message: 'Mappa creata' });
 });
+
 // ===============================
-// ?? Socket.IO Multiplayer
+// ?? Socket.IO: Multiplayer
 // ===============================
 io.on('connection', (socket) => {
-  console.log('✅ Nuovo client connesso:', socket.id);
+  console.log('✅  Nuovo client connesso:', socket.id);
 
   socket.on('joinGame', async (username) => {
     try {
       let player = await Player.findOne({ username });
       if (!player) {
-        player = await Player.create({
-          username,
-          socketId: socket.id,
-          x: 0,
-          y: 0,
-        });
+        player = await Player.create({ username, socketId: socket.id, x: 0, y: 0 });
       } else {
         player.socketId = socket.id;
         await player.save();
@@ -115,7 +126,7 @@ io.on('connection', (socket) => {
         socketId: p.socketId,
       })));
     } catch (err) {
-      console.error('❌ Errore joinGame:', err);
+      console.error('❌  Errore joinGame:', err);
       socket.emit('error', { message: 'Errore interno nel joinGame' });
     }
   });
@@ -141,7 +152,7 @@ io.on('connection', (socket) => {
         })));
       }
     } catch (err) {
-      console.error('❌ Errore movimento:', err);
+      console.error('❌  Errore movimento:', err);
       socket.emit('error', { message: 'Errore interno nel movimento' });
     }
   });
@@ -151,7 +162,7 @@ io.on('connection', (socket) => {
       const inventory = await getInventory(socket.id);
       socket.emit('inventoryData', inventory);
     } catch (err) {
-      console.error('❌ Errore getInventory:', err);
+      console.error('❌  Errore getInventory:', err);
       socket.emit('error', { message: 'Errore nel caricamento inventario' });
     }
   });
@@ -161,7 +172,7 @@ io.on('connection', (socket) => {
       const inventory = await addItemToInventory(socket.id, item);
       socket.emit('inventoryData', inventory);
     } catch (err) {
-      console.error('❌ Errore addItem:', err);
+      console.error('❌  Errore addItem:', err);
       socket.emit('error', { message: "Errore nell'aggiunta oggetto" });
     }
   });
@@ -171,16 +182,15 @@ io.on('connection', (socket) => {
       const inventory = await removeItemFromInventory(socket.id, item);
       socket.emit('inventoryData', inventory);
     } catch (err) {
-      console.error('❌ Errore removeItem:', err);
+      console.error('❌  Errore removeItem:', err);
       socket.emit('error', { message: 'Errore nella rimozione oggetto' });
     }
   });
 
   socket.on('disconnect', async () => {
     try {
-      console.log('❌ Client disconnesso:', socket.id);
+      console.log('❌  Client disconnesso:', socket.id);
       await Player.deleteOne({ socketId: socket.id });
-
       const players = await Player.find({});
       io.emit('playersUpdate', players.map((p) => ({
         username: p.username,
@@ -189,7 +199,7 @@ io.on('connection', (socket) => {
         socketId: p.socketId,
       })));
     } catch (err) {
-      console.error('❌ Errore disconnessione:', err);
+      console.error('❌  Errore disconnessione:', err);
     }
   });
 });
@@ -198,5 +208,5 @@ io.on('connection', (socket) => {
 // ?? Avvio server
 // ===============================
 server.listen(port, () => {
-  console.log(`✅ Server avviato su http://localhost:${port}`);
+  console.log(`✅  Server avviato su http://localhost:${port}`);
 });

@@ -1,4 +1,11 @@
-// ?? Crea la griglia HTML
+// 🧱 grid.js – Crea e gestisce la griglia visiva nel map editor
+
+/**
+ * Crea la griglia HTML a partire dalle dimensioni e dai dati esistenti
+ * @param {number} width - Larghezza della mappa
+ * @param {number} height - Altezza della mappa
+ * @param {Array} data - Dati già presenti nella mappa (opzionale)
+ */
 export function createGrid(width, height, data = []) {
   const container = document.getElementById('gridContainer');
   container.innerHTML = '';
@@ -20,12 +27,16 @@ export function createGrid(width, height, data = []) {
       }
 
       cell.addEventListener('click', () => {
+        // Se è già attivo, si disattiva
         if (cell.classList.contains('active')) {
           cell.classList.remove('active');
           cell.textContent = '.';
         } else {
+          // Se è selezionato un oggetto, usa il simbolo dell'oggetto
+          const selected = document.getElementById('selectedItemSymbol');
+          const symbol = selected?.textContent || 'X';
           cell.classList.add('active');
-          cell.textContent = 'X';
+          cell.textContent = symbol;
         }
       });
 
@@ -34,6 +45,10 @@ export function createGrid(width, height, data = []) {
   }
 }
 
+/**
+ * Estrae i dati dalla griglia per salvarli (solo celle attive)
+ * @returns {Array} - Array di oggetti con x, y, value
+ */
 export function extractGridData() {
   const cells = document.querySelectorAll('.cell.active');
   return Array.from(cells).map((cell) => ({

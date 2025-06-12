@@ -11,6 +11,7 @@
 <body>
   <h1>Map Editor</h1>
 
+  <!-- ?? Form creazione / salvataggio mappa -->
   <form id="mapForm">
     <input type="text" id="mapName" placeholder="Nome Mappa" required>
     <input type="number" id="mapWidth" placeholder="Larghezza" required>
@@ -18,15 +19,34 @@
     <button type="submit">Crea / Salva</button>
   </form>
 
+  <!-- ?? Selettore mappe esistenti -->
   <select id="mapSelector"></select>
   <button id="loadMapBtn">Carica Mappa</button>
 
+  <!-- ?? Contenitore griglia -->
   <div id="gridContainer"></div>
 
+  <!-- ?? Gestione Oggetti (UI integrata sotto la griglia) -->
+  <h2>Gestione Oggetti</h2>
+
+  <!-- ?? Form creazione/modifica oggetto -->
+  <form id="addForm">
+    <input type="hidden" id="id">
+    <input type="text" id="name" placeholder="Nome Oggetto" required>
+    <input type="text" id="symbol" placeholder="Simbolo" required>
+    <button type="submit">Salva Oggetto</button>
+  </form>
+
+  <!-- ?? Lista oggetti -->
+  <ul id="itemsList"></ul>
+
+  <!-- ??️ Info selezione oggetto -->
+  <p>Oggetto selezionato: <span id="selectedItem">nessuno</span> (<span id="selectedItemSymbol">X</span>)</p>
+
+  <!-- ?? Script -->
   <script type="module" src="grid.js"></script>
   <script type="module" src="api.js"></script>
   <script type="module" src="ui.js"></script>
   <script type="module" src="init.js"></script>
-  
 </body>
 </html>
