@@ -1,5 +1,5 @@
 // ===============================
-// ?? server.js — Server principale
+// server.js — Server principale
 // ===============================
 
 import express from 'express';
@@ -18,15 +18,16 @@ import {
   getInventory,
 } from './inventory.js';
 
-import itemsRoutes from './mapeditor/items/itemRoutes.js'; // ✅ Rotte per oggetti mappa
+import itemsRoutes from './mapeditor/items/itemRoutes.js'; // Rotte oggetti mappa
+import imageRoutes from './mapeditor/items/imageRoutes.js'; // Rotte immagini oggetti
 
 // ===============================
-// ?? Variabili d'ambiente
+// Variabili d'ambiente
 // ===============================
 dotenv.config();
 
 // ===============================
-// ?? Setup Express + HTTP + Socket.IO
+// Setup Express + HTTP + Socket.IO
 // ===============================
 const app = express();
 const server = http.createServer(app);
@@ -34,23 +35,29 @@ const io = new Server(server);
 const port = process.env.PORT || 3000;
 
 // ===============================
-// ?? Compatibilità ESM (dirname, filename)
+// Compatibilità ESM (dirname, filename)
 // ===============================
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // ===============================
-// ??️ Middleware statici e parsers
+// Middleware statici e parsers
 // ===============================
 app.use(express.json());
 app.use(express.static(path.join(__dirname, '../client')));
 app.use('/mapeditor', express.static(path.join(__dirname, 'mapeditor')));
 
-// ✅ API REST
+// Rotte API REST
 app.use('/api/items', itemsRoutes);
 
+// Serve le immagini statiche (se necessario)
+app.use('/uploads', express.static(path.join(__dirname, 'mapeditor/items/images')));
+console.log('Serving /uploads from:', path.join(__dirname, 'mapeditor/items/images'));
+// CORRETTO: API per gestione immagini sotto /api/items/images
+app.use('/api/items/images', imageRoutes);
+
 // ===============================
-// ?? Connessione a MongoDB Atlas
+// Connessione a MongoDB Atlas
 // ===============================
 mongoose
   .connect(process.env.MONGODB_URI)
@@ -61,7 +68,7 @@ mongoose
   });
 
 // ===============================
-// ?? API Login (semplificata)
+// API Login (semplificata)
 // ===============================
 app.post('/login', (req, res) => {
   const { username, password } = req.body;
@@ -72,7 +79,7 @@ app.post('/login', (req, res) => {
 });
 
 // ===============================
-// ??️ API Map Editor (mappe)
+// API Map Editor (mappe)
 // ===============================
 app.get('/api/maps', async (req, res) => {
   const maps = await GameMap.find({}, 'name');
@@ -103,7 +110,7 @@ app.post('/api/maps', async (req, res) => {
 });
 
 // ===============================
-// ?? Socket.IO: Multiplayer
+// Socket.IO: Multiplayer
 // ===============================
 io.on('connection', (socket) => {
   console.log('✅  Nuovo client connesso:', socket.id);
@@ -205,7 +212,7 @@ io.on('connection', (socket) => {
 });
 
 // ===============================
-// ?? Avvio server
+// Avvio server
 // ===============================
 server.listen(port, () => {
   console.log(`✅  Server avviato su http://localhost:${port}`);

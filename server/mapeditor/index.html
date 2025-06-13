@@ -11,7 +11,7 @@
 <body>
   <h1>Map Editor</h1>
 
-  <!-- ?? Form creazione / salvataggio mappa -->
+  <!-- ??️ Form creazione / salvataggio mappa -->
   <form id="mapForm">
     <input type="text" id="mapName" placeholder="Nome Mappa" required>
     <input type="number" id="mapWidth" placeholder="Larghezza" required>
@@ -23,27 +23,38 @@
   <select id="mapSelector"></select>
   <button id="loadMapBtn">Carica Mappa</button>
 
-  <!-- ?? Contenitore griglia -->
+  <!-- ?? Contenitore griglia mappa -->
   <div id="gridContainer"></div>
 
-  <!-- ?? Gestione Oggetti (UI integrata sotto la griglia) -->
+  <!-- ?? Gestione Oggetti -->
   <h2>Gestione Oggetti</h2>
 
-  <!-- ?? Form creazione/modifica oggetto -->
+  <!-- ✏️ Form creazione/modifica oggetto -->
   <form id="addForm">
     <input type="hidden" id="id">
     <input type="text" id="name" placeholder="Nome Oggetto" required>
-    <input type="text" id="symbol" placeholder="Simbolo" required>
+    <input type="text" id="symbol" placeholder="Simbolo (es: A oppure /uploads/img.png)" required>
     <button type="submit">Salva Oggetto</button>
   </form>
 
-  <!-- ?? Lista oggetti -->
+  <!-- ??️ Galleria immagini per oggetti -->
+  <h3>Gestione Immagini Oggetto</h3>
+  <input type="file" id="imageUploader" accept="image/*">
+  <div id="imageList" style="display:flex; flex-wrap:wrap; gap:10px; margin-top:10px;"></div>
+
+  <!-- ?? Lista oggetti disponibili -->
   <ul id="itemsList"></ul>
 
-  <!-- ??️ Info selezione oggetto -->
-  <p>Oggetto selezionato: <span id="selectedItem">nessuno</span> (<span id="selectedItemSymbol">X</span>)</p>
+  <!-- ✅ Anteprima oggetto selezionato -->
+  <p>
+    Oggetto selezionato:
+    <span id="selectedItem">nessuno</span>
+    (<span id="selectedItemSymbol">X</span>)
+  </p>
+  <img id="selectedItemPreview" src="" alt="Anteprima Oggetto"
+       style="width:64px; height:64px; display:none;">
 
-  <!-- ?? Script -->
+  <!-- ⚙️ Script -->
   <script type="module" src="grid.js"></script>
   <script type="module" src="api.js"></script>
   <script type="module" src="ui.js"></script>

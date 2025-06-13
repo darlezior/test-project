@@ -23,3 +23,62 @@ body {
   background: #4caf50;
   color: white;
 }
+/* Contenitore lista immagini: flex per disporre in riga con wrapping */
+#imageList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+/* Wrapper singola immagine + bottone elimina */
+#imageList > div {
+  border: 1px solid #ccc;
+  padding: 4px;
+  text-align: center;
+  width: 80px;
+  margin: 4px;
+  display: inline-block;
+  background: white;
+  box-shadow: 1px 1px 3px rgba(0,0,0,0.1);
+  border-radius: 4px;
+}
+
+/* Immagine singola */
+#imageList img {
+  width: 64px;
+  height: 64px;
+  cursor: pointer;
+  object-fit: contain;
+  border-radius: 2px;
+  transition: transform 0.15s ease-in-out;
+}
+#imageList img:hover {
+  transform: scale(1.1);
+  border: 1px solid #4caf50;
+}
+
+/* Pulsante elimina immagine */
+#imageList button {
+  margin-top: 4px;
+  background-color: #e74c3c;
+  border: none;
+  color: white;
+  cursor: pointer;
+  border-radius: 3px;
+  padding: 2px 6px;
+  font-size: 14px;
+}
+#imageList button:hover {
+  background-color: #c0392b;
+}
+
+/* Preview immagine selezionata */
+#selectedItemPreview {
+  display: none;
+  margin-top: 6px;
+  max-width: 64px;
+  max-height: 64px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}

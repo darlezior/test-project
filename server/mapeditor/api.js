@@ -48,3 +48,26 @@ export async function deleteItem(id) {
   });
   return await res.json();
 }
+
+export async function uploadImage(file) {
+  const formData = new FormData();
+  formData.append('image', file);
+  const res = await fetch('/api/items/images', {
+    method: 'POST',
+    body: formData,
+  });
+  if (!res.ok) throw new Error('Upload fallito');
+  return res.json();
+}
+
+export async function getImages() {
+  const res = await fetch('/api/items/images');
+  return res.json();
+}
+
+export async function deleteImage(filename) {
+  const res = await fetch(`/api/items/images/${filename}`, {
+    method: 'DELETE',
+  });
+  return res.json();
+}
