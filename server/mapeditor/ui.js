@@ -6,7 +6,8 @@ import {
   uploadImage, getImages, deleteImage
 } from './api.js';
 
-let activeLayer = 'objects'; // Default
+let activeLayer = 'objects'; // Layer di default
+let currentItem = null;
 
 export function getActiveLayer() {
   return activeLayer;
@@ -18,15 +19,27 @@ export function setupUI() {
   const loadBtn = document.getElementById('loadMapBtn');
   const itemForm = document.getElementById('addForm');
   const itemList = document.getElementById('itemsList');
-  const selectedPreview = document.getElementById('selectedItemPreview');
   const imageUploader = document.getElementById('imageUploader');
   const imageList = document.getElementById('imageList');
-  const selectedItemName = document.getElementById('selectedItem');
   const selectedItemSymbol = document.getElementById('selectedItemSymbol');
 
-  let currentItem = null;
+  function deselectAll() {
+    currentItem = null;
+    itemForm.reset();
+    delete itemForm.dataset.id;
 
-  // ✅ Caricamento lista immagini
+    // Deseleziona tutte le immagini
+    document.querySelectorAll('.image-preview.selected').forEach(img => {
+      img.classList.remove('selected');
+    });
+
+    // Cancella simbolo selezionato
+    if (selectedItemSymbol) {
+      selectedItemSymbol.textContent = '(nessun oggetto selezionato)';
+      delete selectedItemSymbol.dataset.value;
+    }
+  }
+
   async function loadImageList() {
     const images = await getImages();
     imageList.innerHTML = '';
@@ -39,17 +52,22 @@ export function setupUI() {
       image.alt = img;
       image.title = 'Clicca per selezionare';
       image.className = 'image-preview';
+      image.style.cursor = 'pointer';
 
       image.addEventListener('click', () => {
+        deselectAll(); // Deseleziona altri item
+
         currentItem = { name: img, symbol: `/uploads/${img}` };
-        selectedItemName.textContent = img;
-        selectedItemSymbol.textContent = '[immagine]';
         itemForm.symbol.value = `/uploads/${img}`;
-        if (selectedPreview) {
-          selectedPreview.src = `/uploads/${img}`;
-          selectedPreview.style.display = 'block';
-        }
         showNotification(`Immagine selezionata: ${img}`);
+
+        // Valorizza simbolo selezionato
+        if (selectedItemSymbol) {
+          selectedItemSymbol.textContent = img;
+          selectedItemSymbol.dataset.value = `/uploads/${img}`;
+        }
+
+        image.classList.add('selected');
       });
 
       const delBtn = document.createElement('button');
@@ -73,7 +91,6 @@ export function setupUI() {
     });
   }
 
-  // ✅ Upload immagine
   imageUploader.addEventListener('change', async () => {
     const file = imageUploader.files[0];
     if (!file) return;
@@ -88,14 +105,12 @@ export function setupUI() {
     }
   });
 
-  // ✅ Salvataggio mappa
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const name = document.getElementById('mapName').value;
     const width = parseInt(document.getElementById('mapWidth').value);
     const height = parseInt(document.getElementById('mapHeight').value);
-    const layers = extractGridData(); // { background: [...], objects: [...] }
-
+    const layers = extractGridData();
     try {
       const res = await saveMap({ name, width, height, layers });
       showNotification(res.message);
@@ -105,7 +120,6 @@ export function setupUI() {
     }
   });
 
-  // ✅ Caricamento mappa
   loadBtn.addEventListener('click', async () => {
     const name = selector.value;
     if (!name) return alert('Seleziona una mappa da caricare.');
@@ -120,7 +134,6 @@ export function setupUI() {
     }
   });
 
-  // ✅ Lista mappe
   async function loadMapList() {
     try {
       const maps = await getMaps();
@@ -131,28 +144,41 @@ export function setupUI() {
     }
   }
 
-  // ✅ Lista oggetti
   async function loadItemList() {
     try {
       const items = await getItems();
       itemList.innerHTML = '';
       items.forEach((item) => {
         const li = document.createElement('li');
-        li.textContent = `${item.name} (${item.symbol})`;
+        li.style.display = 'flex';
+        li.style.alignItems = 'center';
+        li.style.gap = '10px';
+        li.dataset.id = item._id;
 
-        const useBtn = document.createElement('button');
-        useBtn.textContent = 'Usa';
-        useBtn.addEventListener('click', () => {
+        const img = document.createElement('img');
+        img.src = item.symbol || '';
+        img.alt = item.name;
+        img.style.width = '32px';
+        img.style.height = '32px';
+        img.style.objectFit = 'contain';
+        img.style.border = '1px solid #ccc';
+        img.style.borderRadius = '4px';
+        img.style.cursor = 'pointer';
+
+        img.addEventListener('click', () => {
+          deselectAll(); // Deseleziona immagini
           currentItem = item;
-          selectedItemName.textContent = item.name;
-          selectedItemSymbol.textContent = item.symbol;
           itemForm.symbol.value = item.symbol;
-          if (selectedPreview) {
-            selectedPreview.src = item.symbol;
-            selectedPreview.style.display = 'block';
-          }
           showNotification(`Oggetto selezionato: ${item.name}`);
+          if (selectedItemSymbol) {
+            selectedItemSymbol.textContent = item.name;
+            selectedItemSymbol.dataset.value = item.symbol;
+          }
         });
+
+        const nameSpan = document.createElement('span');
+        nameSpan.textContent = item.name;
+        nameSpan.style.flexGrow = '1';
 
         const editBtn = document.createElement('button');
         editBtn.textContent = 'Modifica';
@@ -164,6 +190,7 @@ export function setupUI() {
 
         const delBtn = document.createElement('button');
         delBtn.textContent = 'Elimina';
+        delBtn.style.color = 'red';
         delBtn.addEventListener('click', async () => {
           if (confirm(`Eliminare l'oggetto "${item.name}"?`)) {
             try {
@@ -175,7 +202,8 @@ export function setupUI() {
           }
         });
 
-        li.appendChild(useBtn);
+        li.appendChild(img);
+        li.appendChild(nameSpan);
         li.appendChild(editBtn);
         li.appendChild(delBtn);
         itemList.appendChild(li);
@@ -185,18 +213,15 @@ export function setupUI() {
     }
   }
 
-  // ✅ Crea / aggiorna oggetto
   itemForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     const name = itemForm.name.value;
     const symbol = itemForm.symbol.value;
     const id = itemForm.dataset.id;
-
     if (!symbol) {
       alert("Devi selezionare o inserire un simbolo per l'oggetto.");
       return;
     }
-
     try {
       if (id) {
         await updateItem(id, { name, symbol });
@@ -205,14 +230,12 @@ export function setupUI() {
         await createItem({ name, symbol });
       }
       itemForm.reset();
-      if (selectedPreview) selectedPreview.style.display = 'none';
       await loadItemList();
     } catch (err) {
       console.error('Errore salvataggio oggetto:', err);
     }
   });
 
-  // ✅ Selettore layer (background / oggetti)
   function setupLayerSelector() {
     const radios = document.querySelectorAll('input[name="layer"]');
     radios.forEach(radio => {
@@ -228,24 +251,20 @@ export function setupUI() {
     });
   }
 
-  // ✅ Notifica temporanea
   function showNotification(message) {
     const notification = document.createElement('div');
+    notification.className = 'notification';
     notification.textContent = message;
-    notification.style.background = '#28a745';
-    notification.style.color = 'white';
-    notification.style.padding = '10px';
-    notification.style.marginTop = '10px';
-    notification.style.position = 'fixed';
-    notification.style.top = '10px';
-    notification.style.right = '10px';
-    notification.style.zIndex = 1000;
-    notification.style.borderRadius = '4px';
     document.body.appendChild(notification);
-    setTimeout(() => notification.remove(), 3000);
+    setTimeout(() => {
+      notification.style.opacity = '0';
+    }, 2500);
+    setTimeout(() => {
+      notification.remove();
+    }, 3000);
   }
 
-  // ✅ Inizializzazione
+  // Caricamento iniziale
   loadMapList();
   loadItemList();
   loadImageList();

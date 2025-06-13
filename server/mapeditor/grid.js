@@ -1,20 +1,17 @@
 // grid.js – Crea e gestisce la griglia visiva nel map editor con supporto layer
-
 import { getActiveLayer } from './ui.js';
 const selectedItemSymbol = document.getElementById('selectedItemSymbol');
-
 let backgroundData = [];
 let objectsData = [];
-//Visibilità layers
+
+// Visibilità layers
 const toggleBackground = document.getElementById('toggleBackground');
 const toggleObjects = document.getElementById('toggleObjects');
 
 export function initLayerVisibilityToggles() {
   if (!toggleBackground || !toggleObjects) return;
-
   toggleBackground.addEventListener('change', updateLayerVisibility);
   toggleObjects.addEventListener('change', updateLayerVisibility);
-
   // Aggiorna visibilità al caricamento
   updateLayerVisibility();
 }
@@ -22,17 +19,15 @@ export function initLayerVisibilityToggles() {
 function updateLayerVisibility() {
   const showBg = toggleBackground.checked;
   const showObj = toggleObjects.checked;
-
   const cells = document.querySelectorAll('#gridContainer .cell');
-
   cells.forEach(cell => {
     const bgLayer = cell.querySelector('.layer-background');
     const objLayer = cell.querySelector('.layer-object');
-
     if (bgLayer) bgLayer.style.display = showBg ? 'block' : 'none';
     if (objLayer) objLayer.style.display = showObj ? 'block' : 'none';
   });
 }
+
 /**
  * Crea la griglia HTML per la mappa
  * @param {number} width - larghezza mappa
@@ -44,7 +39,6 @@ export function createGrid(width, height, data = { background: [], objects: [] }
   container.innerHTML = '';
   container.style.gridTemplateColumns = `repeat(${width}, 20px)`;
   container.style.gridTemplateRows = `repeat(${height}, 20px)`;
-
   backgroundData = data.background || [];
   objectsData = data.objects || [];
 
@@ -69,7 +63,6 @@ export function createGrid(width, height, data = { background: [], objects: [] }
         insertVisual(bgLayer, bgMatch.value);
         cell.classList.add('background-active');
       }
-
       if (objMatch) {
         insertVisual(objLayer, objMatch.value);
         cell.classList.add('object-active');
@@ -79,27 +72,26 @@ export function createGrid(width, height, data = { background: [], objects: [] }
       cell.appendChild(bgLayer);
       cell.appendChild(objLayer);
 
-      // Event listener
+      // Event listener per click
       cell.addEventListener('click', () => {
         const activeLayer = getActiveLayer(); // "background" o "objects"
-        const selectedSymbol = selectedItemSymbol?.textContent || 'X';
+        const selectedSymbol = selectedItemSymbol?.dataset.value || selectedItemSymbol?.textContent || 'X';
         const isBackground = activeLayer === 'background';
         const layerData = isBackground ? backgroundData : objectsData;
         const activeClass = isBackground ? 'background-active' : 'object-active';
         const layerSelector = isBackground ? '.layer-background' : '.layer-object';
-
         const index = layerData.findIndex((c) => c.x === x && c.y === y);
+        const layerDiv = cell.querySelector(layerSelector);
+
         if (index !== -1) {
-          // Rimuovi elemento da layer
+          // Rimuovi elemento dal layer
           layerData.splice(index, 1);
           cell.classList.remove(activeClass);
-          const layerDiv = cell.querySelector(layerSelector);
           if (layerDiv) layerDiv.innerHTML = '';
         } else {
           // Aggiungi elemento al layer
           layerData.push({ x, y, value: selectedSymbol });
           cell.classList.add(activeClass);
-          const layerDiv = cell.querySelector(layerSelector);
           if (layerDiv) insertVisual(layerDiv, selectedSymbol);
         }
       });
@@ -116,30 +108,26 @@ export function createGrid(width, height, data = { background: [], objects: [] }
  */
 function insertVisual(container, value) {
   container.innerHTML = '';
-  if (
-    value.endsWith('.png') ||
-    value.endsWith('.jpg') ||
-    value.startsWith('/uploads/')
-  ) {
+  const isImage = value.match(/\.(png|jpe?g|gif|webp)$/i) || value.startsWith('/uploads/');
+  if (isImage) {
     const img = document.createElement('img');
     img.src = value;
     img.alt = 'Oggetto';
     img.width = 20;
     img.height = 20;
     img.title = value.split('/').pop();
-
     // Assegna la classe CSS corretta
     if (container.classList.contains('layer-background')) {
       img.className = 'bg-image';
     } else if (container.classList.contains('layer-object')) {
       img.className = 'obj-image';
     }
-
     container.appendChild(img);
   } else {
     container.textContent = value;
   }
 }
+
 /**
  * Estrae i dati della griglia per il salvataggio
  * @returns {Object} { background: Array, objects: Array }

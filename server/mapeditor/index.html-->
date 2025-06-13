@@ -54,10 +54,12 @@
   <ul id="itemsList"></ul>
 
   <!-- ✅ Anteprima oggetto selezionato -->
-  <div id="selectedItemSymbol" style="margin: 10px 0; font-weight: bold;">(nessun oggetto selezionato)</div>
+  <!--
 
-  <!-- ⚙️ Script -->
-  <script type="module" src="grid.js"></script>
+  <!-- ⚙️ ??Script -->
+  <
+	="cript type="module" src="grid.js"></script>
+
   <script type="module" src="api.js"></script>
   <script type="module" src="ui.js"></script>
   <script type="module" src="init.js"></script>

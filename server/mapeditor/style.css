@@ -1,24 +1,26 @@
 /* ==============================================
-🌍 Base Styles for the Map Editor Interface
+?? Base Styles for the Map Editor Interface
 ============================================== */
-
 body {
   font-family: sans-serif;
   padding: 1rem;
   background: #f4f4f4;
+  margin: 0;
+}
+* {
+  box-sizing: border-box;
 }
 
 /* ============================
-📦 Grid Container and Cells
+?? Grid Container and Cells
 ============================ */
-
 #gridContainer {
   display: grid;
   gap: 1px;
   margin-top: 1rem;
-  /* Column/row size set via JS */
+  overflow-x: auto;
+  max-width: 100%;
 }
-
 .cell {
   width: 20px;
   height: 20px;
@@ -30,14 +32,11 @@ body {
   font-size: 14px;
   line-height: 20px;
   overflow: hidden;
+  flex-shrink: 0;
 }
-
-/* Generic "active" state */
 .cell.active {
   outline: 2px solid #2196f3;
 }
-
-/* Text label inside cells (optional future use) */
 .cell span {
   position: relative;
   z-index: 3;
@@ -46,22 +45,9 @@ body {
 }
 
 /* ============================
-🖼️ Images inside cells by Layer
+??️ Images inside cells by Layer
 ============================ */
-
-/* Background tile image */
-.bg-image {
-  position: absolute;
-  top: 1px;
-  left: 1px;
-  width: 18px;
-  height: 18px;
-  object-fit: contain;
-  z-index: 1;
-  pointer-events: none;
-}
-
-/* Object tile image (above background) */
+.bg-image,
 .obj-image {
   position: absolute;
   top: 1px;
@@ -69,35 +55,33 @@ body {
   width: 18px;
   height: 18px;
   object-fit: contain;
-  z-index: 2;
   pointer-events: none;
 }
+.bg-image { z-index: 1; }
+.obj-image { z-index: 2; }
 
 /* ============================
-🎨 Layer Background Highlights
+?? Layer Background Highlights
 ============================ */
-
 .cell.background-active {
-  background-color: #a0d8a0; /* light green */
-  color: #2e7d32;            /* dark green */
+  background-color: #a0d8a0;
+  color: #2e7d32;
 }
-
 .cell.object-active {
-  background-color: #f9d29d; /* light orange */
-  color: #b36000;            /* dark orange */
+  background-color: #f9d29d;
+  color: #b36000;
 }
 
 /* ============================
-🖼️ Object Image List Section
+??️ Object Image List Section
 ============================ */
-
 #imageList {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
   margin-top: 10px;
+  justify-content: center;
 }
-
 #imageList > div {
   width: 80px;
   padding: 4px;
@@ -108,7 +92,6 @@ body {
   border-radius: 4px;
   box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.1);
 }
-
 #imageList img {
   width: 64px;
   height: 64px;
@@ -117,12 +100,10 @@ body {
   cursor: pointer;
   transition: transform 0.15s ease-in-out;
 }
-
 #imageList img:hover {
   transform: scale(1.1);
   border: 1px solid #4caf50;
 }
-
 #imageList button {
   margin-top: 4px;
   padding: 2px 6px;
@@ -133,20 +114,128 @@ body {
   border-radius: 3px;
   cursor: pointer;
 }
-
 #imageList button:hover {
   background-color: #c0392b;
 }
 
 /* ============================
-🔍 Selected Item Preview
+?? Form Styles
 ============================ */
-
-#selectedItemPreview {
-  display: none;
-  margin-top: 6px;
-  max-width: 64px;
-  max-height: 64px;
-  border: 1px solid #ccc;
+form {
+  margin-top: 1rem;
+  background: #fff;
+  padding: 10px 15px;
+  border-radius: 6px;
+  box-shadow: 0 0 5px rgba(0,0,0,0.1);
+}
+form input[type="text"],
+form input[type="number"],
+form input[type="file"],
+form select {
+  padding: 6px 8px;
+  margin-bottom: 10px;
+  border: 1px solid #aaa;
   border-radius: 4px;
+  width: 100%;
+  font-size: 14px;
+}
+form label {
+  display: block;
+  margin-bottom: 4px;
+  font-weight: 600;
+}
+form button {
+  padding: 6px 12px;
+  font-size: 14px;
+  background-color: #2196f3;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  width: 100%;
+}
+form button:hover {
+  background-color: #1976d2;
+}
+
+/* ============================
+??️ Sections Titles and Layout
+============================ */
+h2 {
+  margin-top: 1.5rem;
+  font-weight: 700;
+  color: #333;
+}
+.section {
+  margin-bottom: 1.5rem;
+}
+
+/* ============================
+?? Notifiche
+============================ */
+.notification {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background-color: #4caf50;
+  color: white;
+  padding: 10px 20px;
+  border-radius: 4px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+  font-family: sans-serif;
+  font-size: 14px;
+  z-index: 10000;
+  opacity: 0.95;
+  transition: opacity 0.3s ease;
+}
+
+/* ============================
+?? Responsive Styles
+============================ */
+@media (max-width: 768px) {
+  #imageList > div {
+    width: 70px;
+  }
+  #imageList img {
+    width: 56px;
+    height: 56px;
+  }
+  .cell {
+    width: 16px;
+    height: 16px;
+    font-size: 12px;
+    line-height: 16px;
+  }
+  .bg-image,
+  .obj-image {
+    width: 14px;
+    height: 14px;
+  }
+  form button {
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 480px) {
+  body {
+    padding: 0.5rem;
+  }
+  h2 {
+    font-size: 1.2rem;
+  }
+  .cell {
+    width: 14px;
+    height: 14px;
+    font-size: 10px;
+    line-height: 14px;
+  }
+  .bg-image,
+  .obj-image {
+    width: 12px;
+    height: 12px;
+  }
+  form {
+    padding: 8px 10px;
+  }
 }
