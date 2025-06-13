@@ -1,4 +1,4 @@
-// ✅  ui.js – Gestione dell'interfaccia utente del Map Editor
+// ✅ ui.js – Gestione dell'interfaccia utente del Map Editor
 import { createGrid, extractGridData } from './grid.js';
 import {
   saveMap, getMaps, loadMap,
@@ -6,7 +6,7 @@ import {
   uploadImage, getImages, deleteImage
 } from './api.js';
 
-let activeLayer = 'objects';  // Default: layer oggetti
+let activeLayer = 'objects'; // Default
 
 export function getActiveLayer() {
   return activeLayer;
@@ -21,6 +21,9 @@ export function setupUI() {
   const selectedPreview = document.getElementById('selectedItemPreview');
   const imageUploader = document.getElementById('imageUploader');
   const imageList = document.getElementById('imageList');
+  const selectedItemName = document.getElementById('selectedItem');
+  const selectedItemSymbol = document.getElementById('selectedItemSymbol');
+
   let currentItem = null;
 
   // ✅ Caricamento lista immagini
@@ -36,10 +39,11 @@ export function setupUI() {
       image.alt = img;
       image.title = 'Clicca per selezionare';
       image.className = 'image-preview';
+
       image.addEventListener('click', () => {
         currentItem = { name: img, symbol: `/uploads/${img}` };
-        document.getElementById('selectedItem').textContent = img;
-        document.getElementById('selectedItemSymbol').textContent = '[immagine]';
+        selectedItemName.textContent = img;
+        selectedItemSymbol.textContent = '[immagine]';
         itemForm.symbol.value = `/uploads/${img}`;
         if (selectedPreview) {
           selectedPreview.src = `/uploads/${img}`;
@@ -90,7 +94,7 @@ export function setupUI() {
     const name = document.getElementById('mapName').value;
     const width = parseInt(document.getElementById('mapWidth').value);
     const height = parseInt(document.getElementById('mapHeight').value);
-    const layers = extractGridData(); // Deve restituire { background: [...], objects: [...] }
+    const layers = extractGridData(); // { background: [...], objects: [...] }
 
     try {
       const res = await saveMap({ name, width, height, layers });
@@ -110,7 +114,7 @@ export function setupUI() {
       document.getElementById('mapName').value = map.name;
       document.getElementById('mapWidth').value = map.width;
       document.getElementById('mapHeight').value = map.height;
-      createGrid(map.width, map.height, map.layers); // accetta un oggetto con i due layer
+      createGrid(map.width, map.height, map.layers);
     } catch (error) {
       console.error('Errore durante il caricamento della mappa:', error);
     }
@@ -140,8 +144,8 @@ export function setupUI() {
         useBtn.textContent = 'Usa';
         useBtn.addEventListener('click', () => {
           currentItem = item;
-          document.getElementById('selectedItem').textContent = item.name;
-          document.getElementById('selectedItemSymbol').textContent = item.symbol;
+          selectedItemName.textContent = item.name;
+          selectedItemSymbol.textContent = item.symbol;
           itemForm.symbol.value = item.symbol;
           if (selectedPreview) {
             selectedPreview.src = item.symbol;
@@ -208,7 +212,7 @@ export function setupUI() {
     }
   });
 
-  // ✅ Layer selettore (sfondo / oggetti)
+  // ✅ Selettore layer (background / oggetti)
   function setupLayerSelector() {
     const radios = document.querySelectorAll('input[name="layer"]');
     radios.forEach(radio => {

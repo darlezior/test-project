@@ -22,7 +22,18 @@ router.get('/', async (req, res) => {
 // ?? POST /api/items — Crea un nuovo oggetto
 router.post('/', async (req, res) => {
   try {
-    const item = new Item(req.body);
+    const { name, symbol, properties } = req.body;
+
+    if (!name || !symbol) {
+      return res.status(400).json({ error: 'Nome e simbolo sono obbligatori' });
+    }
+
+    const item = new Item({
+      name,
+      symbol,
+      properties: properties || {},
+    });
+
     await item.save();
     res.status(201).json({ message: 'Oggetto creato', item });
   } catch (err) {

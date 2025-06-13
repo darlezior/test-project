@@ -24,38 +24,67 @@ body {
   height: 20px;
   background: #ccc;
   border: 1px solid #aaa;
-  text-align: center;
   position: relative;
   user-select: none;
   cursor: pointer;
   font-size: 14px;
   line-height: 20px;
+  overflow: hidden;
 }
 
-/* Generic "active" state (reserved for future features) */
+/* Generic "active" state */
 .cell.active {
   outline: 2px solid #2196f3;
 }
 
-/* Background Layer */
+/* Text label inside cells (optional future use) */
+.cell span {
+  position: relative;
+  z-index: 3;
+  display: block;
+  text-align: center;
+}
+
+/* ============================
+🖼️ Images inside cells by Layer
+============================ */
+
+/* Background tile image */
+.bg-image {
+  position: absolute;
+  top: 1px;
+  left: 1px;
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* Object tile image (above background) */
+.obj-image {
+  position: absolute;
+  top: 1px;
+  left: 1px;
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+  z-index: 2;
+  pointer-events: none;
+}
+
+/* ============================
+🎨 Layer Background Highlights
+============================ */
+
 .cell.background-active {
   background-color: #a0d8a0; /* light green */
   color: #2e7d32;            /* dark green */
 }
 
-/* Object Layer */
 .cell.object-active {
   background-color: #f9d29d; /* light orange */
   color: #b36000;            /* dark orange */
-}
-
-/* Images inside cells */
-.cell img {
-  max-width: 18px;
-  max-height: 18px;
-  display: block;
-  margin: 0 auto;
-  pointer-events: none;
 }
 
 /* ============================
@@ -69,7 +98,6 @@ body {
   margin-top: 10px;
 }
 
-/* Individual image box */
 #imageList > div {
   width: 80px;
   padding: 4px;
@@ -81,7 +109,6 @@ body {
   box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.1);
 }
 
-/* Image preview thumbnail */
 #imageList img {
   width: 64px;
   height: 64px;
@@ -90,12 +117,12 @@ body {
   cursor: pointer;
   transition: transform 0.15s ease-in-out;
 }
+
 #imageList img:hover {
   transform: scale(1.1);
   border: 1px solid #4caf50;
 }
 
-/* Delete button */
 #imageList button {
   margin-top: 4px;
   padding: 2px 6px;
@@ -106,6 +133,7 @@ body {
   border-radius: 3px;
   cursor: pointer;
 }
+
 #imageList button:hover {
   background-color: #c0392b;
 }
