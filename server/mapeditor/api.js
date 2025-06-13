@@ -1,9 +1,9 @@
 // 🌍 Funzioni API per CRUD mappa
-export async function saveMap(map) {
+export async function saveMap({ name, width, height, layers }) {
   const res = await fetch('/api/maps', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(map),
+    body: JSON.stringify({ name, width, height, layers }),
   });
   return await res.json();
 }
@@ -15,7 +15,18 @@ export async function getMaps() {
 
 export async function loadMap(name) {
   const res = await fetch(`/api/maps/${name}`);
-  return await res.json();
+  const map = await res.json();
+
+  // Controllo compatibilità retroattiva
+  if (!map.layers) {
+    // Se manca `layers`, assumiamo mappa vecchia e convertiamo
+    map.layers = {
+      background: [],
+      objects: map.grid || [], // fallback per vecchie mappe
+    };
+  }
+
+  return map;
 }
 
 // 🎯 Funzioni API per CRUD oggetti mappa
@@ -49,6 +60,7 @@ export async function deleteItem(id) {
   return await res.json();
 }
 
+// 🖼️ Gestione immagini oggetto
 export async function uploadImage(file) {
   const formData = new FormData();
   formData.append('image', file);

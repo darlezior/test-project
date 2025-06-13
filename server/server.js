@@ -93,19 +93,19 @@ app.get('/api/maps/:name', async (req, res) => {
 });
 
 app.post('/api/maps', async (req, res) => {
-  const { name, width, height, grid } = req.body;
-  if (!name || !width || !height || !grid) {
+  const { name, width, height, layers } = req.body;
+  if (!name || !width || !height || !layers) {
     return res.status(400).json({ error: 'Dati incompleti' });
   }
   const existing = await GameMap.findOne({ name });
   if (existing) {
     existing.width = width;
     existing.height = height;
-    existing.grid = grid;
+    existing.layers = layers;
     await existing.save();
     return res.json({ success: true, message: 'Mappa aggiornata' });
   }
-  await GameMap.create({ name, width, height, grid });
+  await GameMap.create({ name, width, height, layers });
   res.json({ success: true, message: 'Mappa creata' });
 });
 

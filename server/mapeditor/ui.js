@@ -6,6 +6,12 @@ import {
   uploadImage, getImages, deleteImage
 } from './api.js';
 
+let activeLayer = 'objects';  // Default: layer oggetti
+
+export function getActiveLayer() {
+  return activeLayer;
+}
+
 export function setupUI() {
   const form = document.getElementById('mapForm');
   const selector = document.getElementById('mapSelector');
@@ -13,32 +19,23 @@ export function setupUI() {
   const itemForm = document.getElementById('addForm');
   const itemList = document.getElementById('itemsList');
   const selectedPreview = document.getElementById('selectedItemPreview');
-  let currentItem = null;
-
-  // ✅  Elementi UI per la gestione immagini oggetti
   const imageUploader = document.getElementById('imageUploader');
   const imageList = document.getElementById('imageList');
+  let currentItem = null;
 
-  // ✅  Caricamento immagini disponibili
+  // ✅ Caricamento lista immagini
   async function loadImageList() {
     const images = await getImages();
     imageList.innerHTML = '';
     images.forEach(img => {
       const wrapper = document.createElement('div');
-      wrapper.style.border = '1px solid #ccc';
-      wrapper.style.padding = '4px';
-      wrapper.style.textAlign = 'center';
-      wrapper.style.width = '80px';
-      wrapper.style.margin = '4px';
-      wrapper.style.display = 'inline-block';
+      wrapper.className = 'image-wrapper';
 
       const image = document.createElement('img');
       image.src = `/uploads/${img}`;
       image.alt = img;
       image.title = 'Clicca per selezionare';
-      image.style.width = '64px';
-      image.style.height = '64px';
-      image.style.cursor = 'pointer';
+      image.className = 'image-preview';
       image.addEventListener('click', () => {
         currentItem = { name: img, symbol: `/uploads/${img}` };
         document.getElementById('selectedItem').textContent = img;
@@ -47,17 +44,15 @@ export function setupUI() {
         if (selectedPreview) {
           selectedPreview.src = `/uploads/${img}`;
           selectedPreview.style.display = 'block';
-          selectedPreview.style.maxWidth = '64px';
-          selectedPreview.style.maxHeight = '64px';
-          selectedPreview.style.marginTop = '6px';
         }
         showNotification(`Immagine selezionata: ${img}`);
       });
 
       const delBtn = document.createElement('button');
       delBtn.textContent = '❌';
-      delBtn.style.marginTop = '4px';
-      delBtn.addEventListener('click', async () => {
+      delBtn.className = 'delete-image';
+      delBtn.addEventListener('click', async (ev) => {
+        ev.stopPropagation();
         if (confirm(`Eliminare l'immagine "${img}"?`)) {
           try {
             await deleteImage(img);
@@ -74,14 +69,14 @@ export function setupUI() {
     });
   }
 
-  // ✅  Upload immagine da file
+  // ✅ Upload immagine
   imageUploader.addEventListener('change', async () => {
     const file = imageUploader.files[0];
     if (!file) return;
     try {
       await uploadImage(file);
       await loadImageList();
-      imageUploader.value = ''; // reset input file
+      imageUploader.value = '';
       showNotification(`Immagine caricata: ${file.name}`);
     } catch (err) {
       console.error('Errore upload immagine:', err);
@@ -89,15 +84,16 @@ export function setupUI() {
     }
   });
 
-  // ✅  Salvataggio mappa
+  // ✅ Salvataggio mappa
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const name = document.getElementById('mapName').value;
     const width = parseInt(document.getElementById('mapWidth').value);
     const height = parseInt(document.getElementById('mapHeight').value);
-    const grid = extractGridData();
+    const layers = extractGridData(); // Deve restituire { background: [...], objects: [...] }
+
     try {
-      const res = await saveMap({ name, width, height, grid });
+      const res = await saveMap({ name, width, height, layers });
       showNotification(res.message);
       await loadMapList();
     } catch (error) {
@@ -105,7 +101,7 @@ export function setupUI() {
     }
   });
 
-  // ✅  Caricamento mappa selezionata
+  // ✅ Caricamento mappa
   loadBtn.addEventListener('click', async () => {
     const name = selector.value;
     if (!name) return alert('Seleziona una mappa da caricare.');
@@ -114,24 +110,24 @@ export function setupUI() {
       document.getElementById('mapName').value = map.name;
       document.getElementById('mapWidth').value = map.width;
       document.getElementById('mapHeight').value = map.height;
-      createGrid(map.width, map.height, map.grid);
+      createGrid(map.width, map.height, map.layers); // accetta un oggetto con i due layer
     } catch (error) {
       console.error('Errore durante il caricamento della mappa:', error);
     }
   });
 
-  // ✅  Caricamento elenco mappe
+  // ✅ Lista mappe
   async function loadMapList() {
     try {
       const maps = await getMaps();
       selector.innerHTML = maps.map(name =>
         `<option value="${name}">${name}</option>`).join('');
     } catch (error) {
-      console.error('Errore durante il caricamento della lista mappe:', error);
+      console.error('Errore caricamento lista mappe:', error);
     }
   }
 
-  // ✅  Caricamento elenco oggetti
+  // ✅ Lista oggetti
   async function loadItemList() {
     try {
       const items = await getItems();
@@ -181,11 +177,11 @@ export function setupUI() {
         itemList.appendChild(li);
       });
     } catch (err) {
-      console.error('Errore nel caricamento oggetti:', err);
+      console.error('Errore caricamento oggetti:', err);
     }
   }
 
-  // ✅  Gestione creazione / aggiornamento oggetto
+  // ✅ Crea / aggiorna oggetto
   itemForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     const name = itemForm.name.value;
@@ -208,11 +204,27 @@ export function setupUI() {
       if (selectedPreview) selectedPreview.style.display = 'none';
       await loadItemList();
     } catch (err) {
-      console.error('Errore nel salvataggio oggetto:', err);
+      console.error('Errore salvataggio oggetto:', err);
     }
   });
 
-  // ✅  Notifica temporanea
+  // ✅ Layer selettore (sfondo / oggetti)
+  function setupLayerSelector() {
+    const radios = document.querySelectorAll('input[name="layer"]');
+    radios.forEach(radio => {
+      radio.addEventListener('change', () => {
+        if (radio.checked) {
+          activeLayer = radio.value;
+          showNotification(`Layer attivo: ${activeLayer}`);
+        }
+      });
+      if (radio.checked) {
+        activeLayer = radio.value;
+      }
+    });
+  }
+
+  // ✅ Notifica temporanea
   function showNotification(message) {
     const notification = document.createElement('div');
     notification.textContent = message;
@@ -220,14 +232,18 @@ export function setupUI() {
     notification.style.color = 'white';
     notification.style.padding = '10px';
     notification.style.marginTop = '10px';
+    notification.style.position = 'fixed';
+    notification.style.top = '10px';
+    notification.style.right = '10px';
+    notification.style.zIndex = 1000;
+    notification.style.borderRadius = '4px';
     document.body.appendChild(notification);
-    setTimeout(() => {
-      notification.remove();
-    }, 3000);
+    setTimeout(() => notification.remove(), 3000);
   }
 
   // ✅ Inizializzazione
   loadMapList();
   loadItemList();
   loadImageList();
+  setupLayerSelector();
 }

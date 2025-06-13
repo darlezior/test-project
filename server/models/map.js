@@ -1,19 +1,19 @@
-// ===============================
-// ??️ models/map.js — Modello per le mappe del Map Editor
-// ===============================
 import mongoose from 'mongoose';
 
-const cellSchema = new mongoose.Schema({
+const layerItemSchema = new mongoose.Schema({
   x: Number,
   y: Number,
-  value: String,
-});
+  value: String
+}, { _id: false });
 
 const mapSchema = new mongoose.Schema({
   name: { type: String, required: true, unique: true },
   width: Number,
   height: Number,
-  grid: [cellSchema],
+  layers: {
+    background: { type: [layerItemSchema], default: [] },
+    objects: { type: [layerItemSchema], default: [] }
+  }
 });
 
 export const GameMap = mongoose.model('GameMap', mapSchema);

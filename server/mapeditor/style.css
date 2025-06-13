@@ -1,29 +1,67 @@
-/* ===============================
-?? Stile base per il Map Editor
-=============================== */
+/* ==============================================
+🌍 Base Styles for the Map Editor Interface
+============================================== */
+
 body {
   font-family: sans-serif;
   padding: 1rem;
   background: #f4f4f4;
 }
+
+/* ============================
+📦 Grid Container and Cells
+============================ */
+
 #gridContainer {
   display: grid;
   gap: 1px;
   margin-top: 1rem;
+  /* Column/row size set via JS */
 }
+
 .cell {
   width: 20px;
   height: 20px;
   background: #ccc;
   border: 1px solid #aaa;
   text-align: center;
+  position: relative;
+  user-select: none;
   cursor: pointer;
+  font-size: 14px;
+  line-height: 20px;
 }
+
+/* Generic "active" state (reserved for future features) */
 .cell.active {
-  background: #4caf50;
-  color: white;
+  outline: 2px solid #2196f3;
 }
-/* Contenitore lista immagini: flex per disporre in riga con wrapping */
+
+/* Background Layer */
+.cell.background-active {
+  background-color: #a0d8a0; /* light green */
+  color: #2e7d32;            /* dark green */
+}
+
+/* Object Layer */
+.cell.object-active {
+  background-color: #f9d29d; /* light orange */
+  color: #b36000;            /* dark orange */
+}
+
+/* Images inside cells */
+.cell img {
+  max-width: 18px;
+  max-height: 18px;
+  display: block;
+  margin: 0 auto;
+  pointer-events: none;
+}
+
+/* ============================
+🖼️ Object Image List Section
+============================ */
+
 #imageList {
   display: flex;
   flex-wrap: wrap;
@@ -31,26 +69,25 @@ body {
   margin-top: 10px;
 }
 
-/* Wrapper singola immagine + bottone elimina */
+/* Individual image box */
 #imageList > div {
-  border: 1px solid #ccc;
-  padding: 4px;
-  text-align: center;
   width: 80px;
+  padding: 4px;
   margin: 4px;
-  display: inline-block;
-  background: white;
-  box-shadow: 1px 1px 3px rgba(0,0,0,0.1);
+  text-align: center;
+  background: #fff;
+  border: 1px solid #ccc;
   border-radius: 4px;
+  box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.1);
 }
 
-/* Immagine singola */
+/* Image preview thumbnail */
 #imageList img {
   width: 64px;
   height: 64px;
-  cursor: pointer;
   object-fit: contain;
   border-radius: 2px;
+  cursor: pointer;
   transition: transform 0.15s ease-in-out;
 }
 #imageList img:hover {
@@ -58,22 +95,25 @@ body {
   border: 1px solid #4caf50;
 }
 
-/* Pulsante elimina immagine */
+/* Delete button */
 #imageList button {
   margin-top: 4px;
-  background-color: #e74c3c;
-  border: none;
-  color: white;
-  cursor: pointer;
-  border-radius: 3px;
   padding: 2px 6px;
   font-size: 14px;
+  color: white;
+  background-color: #e74c3c;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
 }
 #imageList button:hover {
   background-color: #c0392b;
 }
 
-/* Preview immagine selezionata */
+/* ============================
+🔍 Selected Item Preview
+============================ */
+
 #selectedItemPreview {
   display: none;
   margin-top: 6px;
