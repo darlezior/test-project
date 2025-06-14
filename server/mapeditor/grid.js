@@ -37,8 +37,8 @@ function updateLayerVisibility() {
 export function createGrid(width, height, data = { background: [], objects: [] }) {
   const container = document.getElementById('gridContainer');
   container.innerHTML = '';
-  container.style.gridTemplateColumns = `repeat(${width}, 20px)`;
-  container.style.gridTemplateRows = `repeat(${height}, 20px)`;
+  container.style.gridTemplateColumns = `repeat(${width}, 48px)`;
+  container.style.gridTemplateRows = `repeat(${height}, 48px)`;
   backgroundData = data.background || [];
   objectsData = data.objects || [];
 

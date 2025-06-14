@@ -20,25 +20,43 @@ router.get('/', async (req, res) => {
 });
 
 // ?? POST /api/items — Crea un nuovo oggetto
+// POST /api/items
 router.post('/', async (req, res) => {
   try {
-    const { name, symbol, properties } = req.body;
-
-    if (!name || !symbol) {
-      return res.status(400).json({ error: 'Nome e simbolo sono obbligatori' });
-    }
-
-    const item = new Item({
+    const {
       name,
       symbol,
-      properties: properties || {},
+      interactable = false,
+      onClickAction = '',
+      durability = 0,
+      usable = false,
+      container = false,
+      solid = false,
+      collidable = false,
+      triggerZone = false,
+      properties = {}
+    } = req.body;
+
+    const parsedProps = typeof properties === 'string' ? JSON.parse(properties || '{}') : properties;
+
+    const newItem = new Item({
+      name,
+      symbol,
+      interactable,
+      onClickAction,
+      durability,
+      usable,
+      container,
+      solid,
+      collidable,
+      triggerZone,
+      properties: parsedProps
     });
 
-    await item.save();
-    res.status(201).json({ message: 'Oggetto creato', item });
+    await newItem.save();
+    res.status(201).json(newItem);
   } catch (err) {
-    console.error('Errore creazione oggetto:', err);
-    res.status(400).json({ error: 'Dati non validi' });
+    res.status(400).json({ error: 'Errore nella creazione dell\'oggetto', details: err.message });
   }
 });
 

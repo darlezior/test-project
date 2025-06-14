@@ -39,11 +39,56 @@
 
   <!-- ✏️ Form creazione/modifica oggetto -->
   <form id="addForm">
-    <input type="hidden" id="id">
-    <input type="text" id="name" placeholder="Nome Oggetto" required>
-    <input type="text" id="symbol" placeholder="Simbolo (es: A oppure /uploads/img.png)" required>
-    <button type="submit">Salva Oggetto</button>
-  </form>
+  <input type="text" name="name" placeholder="Nome oggetto" required />
+  <input type="text" name="symbol" placeholder="Percorso immagine o simbolo" required />
+
+  <label>
+    <input type="checkbox" name="interactable" />
+    Interagibile
+  </label>
+
+  <label>
+    Azione al click:
+    <input type="text" name="onClickAction" placeholder="es. openDoor, pickUp, talk" />
+  </label>
+
+  <label>
+    Durabilità:
+    <input type="number" name="durability" min="0" />
+  </label>
+
+  <label>
+    <input type="checkbox" name="usable" />
+    Utilizzabile
+  </label>
+
+  <label>
+    <input type="checkbox" name="container" />
+    Contenitore
+  </label>
+
+  <label>
+    <input type="checkbox" name="solid" />
+    Solido (blocca movimento)
+  </label>
+
+  <label>
+    <input type="checkbox" name="collidable" />
+    Collidibile
+  </label>
+
+  <label>
+    <input type="checkbox" name="triggerZone" />
+    Zona trigger
+  </label>
+
+  <label>
+    Proprietà JSON:
+    <textarea name="properties" placeholder='{"flammable": true, "value": 100}' rows="3" style="width:100%;"></textarea>
+  </label>
+
+  <button type="submit">Salva Oggetto</button>
+</form>
 
   <!-- ??️ Galleria immagini per oggetti -->
   <h3>Gestione Immagini Oggetto</h3>

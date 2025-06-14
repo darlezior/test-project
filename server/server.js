@@ -21,6 +21,11 @@ import {
 import itemsRoutes from './mapeditor/items/itemRoutes.js'; // Rotte oggetti mappa
 import imageRoutes from './mapeditor/items/imageRoutes.js'; // Rotte immagini oggetti
 
+// Nuovi import usereditor
+import authRoutes from './usereditor/auth.js';
+import userRoutes from './usereditor/users.js';
+import userEditorRoutes from './usereditor/usereditorRoutes.js';
+
 // ===============================
 // Variabili d'ambiente
 // ===============================
@@ -29,7 +34,7 @@ dotenv.config();
 // ===============================
 // Setup Express + HTTP + Socket.IO
 // ===============================
-const app = express();
+const app = express(); // <--- spostato qui
 const server = http.createServer(app);
 const io = new Server(server);
 const port = process.env.PORT || 3000;
@@ -46,15 +51,24 @@ const __dirname = path.dirname(__filename);
 app.use(express.json());
 app.use(express.static(path.join(__dirname, '../client')));
 app.use('/mapeditor', express.static(path.join(__dirname, 'mapeditor')));
+app.use('/usereditor', express.static(path.join(__dirname, 'usereditor')));
 
-// Rotte API REST
+// Rotte API REST per map editor
 app.use('/api/items', itemsRoutes);
 
-// Serve le immagini statiche (se necessario)
+// Serve immagini statiche (se necessario)
 app.use('/uploads', express.static(path.join(__dirname, 'mapeditor/items/images')));
 console.log('Serving /uploads from:', path.join(__dirname, 'mapeditor/items/images'));
-// CORRETTO: API per gestione immagini sotto /api/items/images
+
+// API per gestione immagini sotto /api/items/images
 app.use('/api/items/images', imageRoutes);
+
+// === ROTTE USEREDITOR (login, registrazione, gestione utenti) ===
+app.use('/api/auth', authRoutes);
+app.use('/api/users', userRoutes);
+
+// QUI la tua rotta /api/users da userEditorRoutes (se serve)
+app.use('/api/users', userEditorRoutes); // attenzione a non creare conflitti con userRoutes
 
 // ===============================
 // Connessione a MongoDB Atlas
@@ -66,17 +80,6 @@ mongoose
     console.error('❌  Errore connessione MongoDB:', err);
     process.exit(1);
   });
-
-// ===============================
-// API Login (semplificata)
-// ===============================
-app.post('/login', (req, res) => {
-  const { username, password } = req.body;
-  if (!username || !password) {
-    return res.status(400).json({ success: false, message: 'Credenziali mancanti' });
-  }
-  res.json({ success: true, username });
-});
 
 // ===============================
 // API Map Editor (mappe)
@@ -209,6 +212,20 @@ io.on('connection', (socket) => {
       console.error('❌  Errore disconnessione:', err);
     }
   });
+
+  // Evento socket per richiesta mappa
+  socket.on('requestMap', async () => {
+    try {
+      const map = await GameMap.findOne({ name: 'default' }); // modifica se serve
+      if (map) {
+        socket.emit('mapData', { tiles: map.layers }); // o map.tiles se così definito
+      }
+    } catch (err) {
+      console.error('❌  Errore richiesta mappa:', err);
+      socket.emit('error', { message: 'Errore nel caricamento mappa' });
+    }
+  });
+
 });
 
 // ===============================

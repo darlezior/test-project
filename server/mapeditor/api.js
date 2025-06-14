@@ -19,10 +19,9 @@ export async function loadMap(name) {
 
   // Controllo compatibilità retroattiva
   if (!map.layers) {
-    // Se manca `layers`, assumiamo mappa vecchia e convertiamo
     map.layers = {
       background: [],
-      objects: map.grid || [], // fallback per vecchie mappe
+      objects: map.grid || [],
     };
   }
 
@@ -41,6 +40,7 @@ export async function createItem(item) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(item),
   });
+  if (!res.ok) throw new Error('Errore nel salvataggio');
   return await res.json();
 }
 

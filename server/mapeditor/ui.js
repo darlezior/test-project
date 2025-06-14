@@ -1,4 +1,4 @@
-// ✅ ui.js – Gestione dell'interfaccia utente del Map Editor
+// ✅  ui.js – Gestione dell'interfaccia utente del Map Editor
 import { createGrid, extractGridData } from './grid.js';
 import {
   saveMap, getMaps, loadMap,
@@ -27,13 +27,9 @@ export function setupUI() {
     currentItem = null;
     itemForm.reset();
     delete itemForm.dataset.id;
-
-    // Deseleziona tutte le immagini
     document.querySelectorAll('.image-preview.selected').forEach(img => {
       img.classList.remove('selected');
     });
-
-    // Cancella simbolo selezionato
     if (selectedItemSymbol) {
       selectedItemSymbol.textContent = '(nessun oggetto selezionato)';
       delete selectedItemSymbol.dataset.value;
@@ -55,23 +51,19 @@ export function setupUI() {
       image.style.cursor = 'pointer';
 
       image.addEventListener('click', () => {
-        deselectAll(); // Deseleziona altri item
-
+        deselectAll();
         currentItem = { name: img, symbol: `/uploads/${img}` };
         itemForm.symbol.value = `/uploads/${img}`;
         showNotification(`Immagine selezionata: ${img}`);
-
-        // Valorizza simbolo selezionato
         if (selectedItemSymbol) {
           selectedItemSymbol.textContent = img;
           selectedItemSymbol.dataset.value = `/uploads/${img}`;
         }
-
         image.classList.add('selected');
       });
 
       const delBtn = document.createElement('button');
-      delBtn.textContent = '❌';
+      delBtn.textContent = '❌ ';
       delBtn.className = 'delete-image';
       delBtn.addEventListener('click', async (ev) => {
         ev.stopPropagation();
@@ -166,7 +158,7 @@ export function setupUI() {
         img.style.cursor = 'pointer';
 
         img.addEventListener('click', () => {
-          deselectAll(); // Deseleziona immagini
+          deselectAll();
           currentItem = item;
           itemForm.symbol.value = item.symbol;
           showNotification(`Oggetto selezionato: ${item.name}`);
@@ -185,6 +177,17 @@ export function setupUI() {
         editBtn.addEventListener('click', () => {
           itemForm.name.value = item.name;
           itemForm.symbol.value = item.symbol;
+          itemForm.interactable.checked = !!item.interactable;
+          itemForm.onClickAction.value = item.onClickAction || '';
+          itemForm.durability.value = item.durability || '';
+          itemForm.usable.checked = !!item.usable;
+          itemForm.container.checked = !!item.container;
+          itemForm.solid.checked = !!item.solid;
+          itemForm.collidable.checked = !!item.collidable;
+          itemForm.triggerZone.checked = !!item.triggerZone;
+          itemForm.properties.value = item.properties
+            ? JSON.stringify(item.properties, null, 2)
+            : '';
           itemForm.dataset.id = item._id;
         });
 
@@ -215,19 +218,41 @@ export function setupUI() {
 
   itemForm.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const name = itemForm.name.value;
-    const symbol = itemForm.symbol.value;
-    const id = itemForm.dataset.id;
-    if (!symbol) {
+
+    const itemData = {
+      name: itemForm.name.value,
+      symbol: itemForm.symbol.value,
+      interactable: itemForm.interactable.checked,
+      onClickAction: itemForm.onClickAction.value,
+      durability: itemForm.durability.value ? parseInt(itemForm.durability.value) : undefined,
+      usable: itemForm.usable.checked,
+      container: itemForm.container.checked,
+      solid: itemForm.solid.checked,
+      collidable: itemForm.collidable.checked,
+      triggerZone: itemForm.triggerZone.checked,
+    };
+
+    try {
+      if (itemForm.properties.value) {
+        itemData.properties = JSON.parse(itemForm.properties.value);
+      }
+    } catch (err) {
+      alert("Proprietà JSON non valide.");
+      return;
+    }
+
+    if (!itemData.symbol) {
       alert("Devi selezionare o inserire un simbolo per l'oggetto.");
       return;
     }
+
+    const id = itemForm.dataset.id;
     try {
       if (id) {
-        await updateItem(id, { name, symbol });
+        await updateItem(id, itemData);
         delete itemForm.dataset.id;
       } else {
-        await createItem({ name, symbol });
+        await createItem(itemData);
       }
       itemForm.reset();
       await loadItemList();

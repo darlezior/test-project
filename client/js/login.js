@@ -2,7 +2,7 @@
 
 import { startGame } from './game.js';
 import { log } from './logger.js';
-import './joystick.js'; // ✅ Assicura che il joystick venga inizializzato
+import './joystick.js'; // Inizializza il joystick
 
 const loginScreen = document.getElementById('login-screen');
 const gameScreen = document.getElementById('game-screen');
@@ -11,7 +11,21 @@ const usernameInput = document.getElementById('username');
 const passwordInput = document.getElementById('password');
 const loginMessage = document.getElementById('login-message');
 
+// Funzione per pulire messaggi di errore
+function clearMessage() {
+  loginMessage.textContent = '';
+}
+
+// Aggiungo un listener anche al tasto Invio per facilità d'uso
+usernameInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') btnLogin.click();
+});
+passwordInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') btnLogin.click();
+});
+
 btnLogin.addEventListener('click', async () => {
+  clearMessage();
   const username = usernameInput.value.trim();
   const password = passwordInput.value;
 
@@ -19,31 +33,34 @@ btnLogin.addEventListener('click', async () => {
 
   if (!username || !password) {
     loginMessage.textContent = 'Inserisci username e password';
-    log('❌  Username o password mancanti');
+    log('❌ Username o password mancanti');
     return;
   }
 
   try {
-    const res = await fetch('/login', {
+    const response = await fetch('/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, password }),
     });
 
-    const data = await res.json();
+    if (!response.ok) {
+      throw new Error(`HTTP status ${response.status}`);
+    }
+
+    const data = await response.json();
 
     if (data.success) {
-      log(`✅  Login riuscito per ${username}`);
+      log(`✅ Login riuscito per ${username}`);
       loginScreen.style.display = 'none';
       gameScreen.style.display = 'block';
       startGame(username);
     } else {
       loginMessage.textContent = data.message || 'Errore login';
-      log(`❌  Login fallito: ${data.message || 'Errore generico'}`);
+      log(`❌ Login fallito: ${data.message || 'Errore generico'}`);
     }
-
   } catch (err) {
-    loginMessage.textContent = 'Errore di rete';
-    log(`❌  Errore rete durante il login: ${err}`);
+    loginMessage.textContent = 'Errore di rete o server';
+    log(`❌ Errore rete durante il login: ${err.message || err}`);
   }
 });
