@@ -1,54 +1,63 @@
 // client/js/game.js
 
-//import { io } from "/socket.io/socket.io.js"; // se serve esplicito import socket.io-client
-
-// Inizializza la connessione socket.io
 const socket = io();
 
-let localSocketId = null;  // id socket locale assegnato dal server
-let username = '';         // username del giocatore corrente
-let players = {};          // tutti i giocatori connessi
-let currentMap = [];       // griglia della mappa corrente
+let localSocketId = null;
+let currentCharacter = null;  // ora conserviamo l'oggetto personaggio selezionato
+let players = {};
+let currentMap = [];
 
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 const CELL_SIZE = 32;
 
 /**
- * Funzione per iniziare il gioco, chiamata da login.js
- * @param {string} user - username del giocatore appena loggato
+ * Inizia il gioco con l'intero oggetto personaggio selezionato
+ * @param {Object} character - personaggio selezionato con tutte le info
  */
-export function startGame(user) {
-  username = user;
+export function startGame(character) {
+  currentCharacter = character;
+  const username = character.name;  // nome del personaggio
   socket.emit('login', username);
+
+  // Se serve inviare anche posizione o altro al server in futuro, lo puoi fare qui:
+  // es: socket.emit('characterSelected', character);
+
   setupInput();
   gameLoop();
+
+  // Mostra la schermata gioco, nasconde la selezione personaggio
+  document.getElementById('char-select-screen').style.display = 'none';
+  document.getElementById('game-screen').style.display = 'block';
 }
 
-// Evento: conferma login dal server con id socket assegnato
+// Evento conferma login
 socket.on('loginSuccess', (id) => {
   localSocketId = id;
-  // La UI viene gestita da login.js
-  socket.emit('requestMap');
+
+  // Invia richiesta mappa e pos iniziale basata su character.pos
+  socket.emit('requestMap', currentCharacter.pos.map);
+
+  // Potresti voler inviare la posizione iniziale per teletrasporto o simili
+  // socket.emit('setPosition', currentCharacter.pos);
 });
 
-// Evento: errore login
+// Errore login
 socket.on('loginError', (msg) => {
   alert(`Login fallito: ${msg}`);
 });
 
-// Evento: ricezione dati mappa dal server
+// Ricezione dati mappa
 socket.on('mapData', (map) => {
   currentMap = map.tiles;
   drawMap();
 });
 
-// Evento: aggiornamento stato giocatori
+// Aggiornamento stato giocatori
 socket.on('state', (serverPlayers) => {
   players = serverPlayers;
 });
 
-// Imposta listener per input tastiera per movimento
 function setupInput() {
   window.addEventListener('keydown', (e) => {
     const directions = {
@@ -63,7 +72,6 @@ function setupInput() {
   });
 }
 
-// Loop di gioco per disegnare mappa e giocatori in modo continuo
 function gameLoop() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   drawMap();
@@ -71,7 +79,6 @@ function gameLoop() {
   requestAnimationFrame(gameLoop);
 }
 
-// Disegna la mappa sulla canvas
 function drawMap() {
   if (!currentMap || currentMap.length === 0) return;
 
@@ -82,14 +89,13 @@ function drawMap() {
         grass: '#88cc88',
         water: '#3399ff',
         stone: '#999999',
-      }[tile] || '#222'; // colore di default
+      }[tile] || '#222';
 
       ctx.fillRect(x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE);
     }
   }
 }
 
-// Disegna tutti i giocatori presenti nella partita
 function drawPlayers() {
   for (const id in players) {
     const player = players[id];
@@ -97,9 +103,8 @@ function drawPlayers() {
   }
 }
 
-// Disegna un singolo personaggio nella posizione data
 function drawCharacter(x, y, name, isLocal) {
-  ctx.fillStyle = isLocal ? '#ffd700' : '#0000ff'; // colore diverso per giocatore locale
+  ctx.fillStyle = isLocal ? '#ffd700' : '#0000ff';
   ctx.fillRect(x * CELL_SIZE + 8, y * CELL_SIZE + 8, CELL_SIZE - 16, CELL_SIZE - 16);
   ctx.fillStyle = '#000';
   ctx.font = '12px Arial';

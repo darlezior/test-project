@@ -3,6 +3,7 @@
 import { startGame } from './game.js';
 import { log } from './logger.js';
 import './joystick.js'; // Inizializza il joystick
+import { showCharSelect } from './charSelect.js';
 
 const loginScreen = document.getElementById('login-screen');
 const gameScreen = document.getElementById('game-screen');
@@ -53,8 +54,8 @@ btnLogin.addEventListener('click', async () => {
     if (data.success) {
       log(`✅ Login riuscito per ${username}`);
       loginScreen.style.display = 'none';
-      gameScreen.style.display = 'block';
-      startGame(username);
+      // MOSTRA SCHERMATA SELEZIONE PERSONAGGI, passandogli userId che ti deve ritornare il login
+      showCharSelect(data.userId);
     } else {
       loginMessage.textContent = data.message || 'Errore login';
       log(`❌ Login fallito: ${data.message || 'Errore generico'}`);
