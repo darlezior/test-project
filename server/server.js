@@ -1,6 +1,6 @@
-// ===============================
-// server.js — Server principale
-// ===============================
+// ==============================================
+// server.js — Avvio server MMO 2D (Node + Socket.IO + MongoDB)
+// ==============================================
 
 import express from 'express';
 import http from 'http';
@@ -10,83 +10,69 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 
+// ==== Modelli ====
 import { Player } from './models/player.js';
 import { GameMap } from './models/map.js';
+
+// ==== Utility Inventory ====
 import {
   addItemToInventory,
   removeItemFromInventory,
   getInventory,
 } from './inventory.js';
 
-import itemsRoutes from './mapeditor/items/itemRoutes.js'; // Rotte oggetti mappa
-import imageRoutes from './mapeditor/items/imageRoutes.js'; // Rotte immagini oggetti
-
-// Nuovi import usereditor
+// ==== Rotte modulari ====
+import itemsRoutes from './mapeditor/items/itemRoutes.js';
+import imageRoutes from './mapeditor/items/imageRoutes.js';
 import authRoutes from './usereditor/auth.js';
 import userRoutes from './usereditor/users.js';
 import userEditorRoutes from './usereditor/usereditorRoutes.js';
+import charRoutes from './usereditor/charRoutes.js';
 
-// ===============================
-// Variabili d'ambiente
-// ===============================
+// ==============================================
+// Inizializzazione e configurazione base
+// ==============================================
+
 dotenv.config();
-
-// ===============================
-// Setup Express + HTTP + Socket.IO
-// ===============================
-const app = express(); // <--- spostato qui
+const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 const port = process.env.PORT || 3000;
 
-// ===============================
-// Compatibilità ESM (dirname, filename)
-// ===============================
+// Compatibilità ESM per __dirname
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// ===============================
-// Middleware statici e parsers
-// ===============================
+// ==============================================
+// Middleware e percorsi statici
+// ==============================================
+
 app.use(express.json());
 app.use(express.static(path.join(__dirname, '../client')));
 app.use('/mapeditor', express.static(path.join(__dirname, 'mapeditor')));
 app.use('/usereditor', express.static(path.join(__dirname, 'usereditor')));
-
-// Rotte API REST per map editor
-app.use('/api/items', itemsRoutes);
-
-// Serve immagini statiche (se necessario)
 app.use('/uploads', express.static(path.join(__dirname, 'mapeditor/items/images')));
-console.log('Serving /uploads from:', path.join(__dirname, 'mapeditor/items/images'));
 
-// API per gestione immagini sotto /api/items/images
+// ==============================================
+// API Routing — Modulari
+// ==============================================
+
+// Editor oggetti mappa
+app.use('/api/items', itemsRoutes);
 app.use('/api/items/images', imageRoutes);
 
-// === ROTTE USEREDITOR (login, registrazione, gestione utenti) ===
+// Account e gestione utenti
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/users', userEditorRoutes); // Attenzione ai conflitti
+app.use('/api/chars', charRoutes);
+// ==============================================
+// API Routing — Mappe
+// ==============================================
 
-// QUI la tua rotta /api/users da userEditorRoutes (se serve)
-app.use('/api/users', userEditorRoutes); // attenzione a non creare conflitti con userRoutes
-
-// ===============================
-// Connessione a MongoDB Atlas
-// ===============================
-mongoose
-  .connect(process.env.MONGODB_URI)
-  .then(() => console.log('✅  Connesso a MongoDB Atlas'))
-  .catch((err) => {
-    console.error('❌  Errore connessione MongoDB:', err);
-    process.exit(1);
-  });
-
-// ===============================
-// API Map Editor (mappe)
-// ===============================
 app.get('/api/maps', async (req, res) => {
   const maps = await GameMap.find({}, 'name');
-  res.json(maps.map((m) => m.name));
+  res.json(maps.map(m => m.name));
 });
 
 app.get('/api/maps/:name', async (req, res) => {
@@ -100,23 +86,36 @@ app.post('/api/maps', async (req, res) => {
   if (!name || !width || !height || !layers) {
     return res.status(400).json({ error: 'Dati incompleti' });
   }
+
   const existing = await GameMap.findOne({ name });
   if (existing) {
-    existing.width = width;
-    existing.height = height;
-    existing.layers = layers;
+    Object.assign(existing, { width, height, layers });
     await existing.save();
     return res.json({ success: true, message: 'Mappa aggiornata' });
   }
+
   await GameMap.create({ name, width, height, layers });
   res.json({ success: true, message: 'Mappa creata' });
 });
 
-// ===============================
-// Socket.IO: Multiplayer
-// ===============================
+// ==============================================
+// MongoDB — Connessione
+// ==============================================
+
+mongoose
+  .connect(process.env.MONGODB_URI)
+  .then(() => console.log('✅   Connesso a MongoDB Atlas'))
+  .catch(err => {
+    console.error('❌   Errore connessione MongoDB:', err);
+    process.exit(1);
+  });
+
+// ==============================================
+// Socket.IO — Logica Multiplayer
+// ==============================================
+
 io.on('connection', (socket) => {
-  console.log('✅  Nuovo client connesso:', socket.id);
+  console.log('✅   Client connesso:', socket.id);
 
   socket.on('joinGame', async (username) => {
     try {
@@ -129,14 +128,11 @@ io.on('connection', (socket) => {
       }
 
       const players = await Player.find({});
-      io.emit('playersUpdate', players.map((p) => ({
-        username: p.username,
-        x: p.x,
-        y: p.y,
-        socketId: p.socketId,
+      io.emit('playersUpdate', players.map(({ username, x, y, socketId }) => ({
+        username, x, y, socketId
       })));
     } catch (err) {
-      console.error('❌  Errore joinGame:', err);
+      console.error('❌   Errore joinGame:', err);
       socket.emit('error', { message: 'Errore interno nel joinGame' });
     }
   });
@@ -154,15 +150,12 @@ io.on('connection', (socket) => {
         await player.save();
 
         const players = await Player.find({});
-        io.emit('playersUpdate', players.map((p) => ({
-          username: p.username,
-          x: p.x,
-          y: p.y,
-          socketId: p.socketId,
+        io.emit('playersUpdate', players.map(({ username, x, y, socketId }) => ({
+          username, x, y, socketId
         })));
       }
     } catch (err) {
-      console.error('❌  Errore movimento:', err);
+      console.error('❌   Errore movimento:', err);
       socket.emit('error', { message: 'Errore interno nel movimento' });
     }
   });
@@ -172,7 +165,7 @@ io.on('connection', (socket) => {
       const inventory = await getInventory(socket.id);
       socket.emit('inventoryData', inventory);
     } catch (err) {
-      console.error('❌  Errore getInventory:', err);
+      console.error('❌   Errore getInventory:', err);
       socket.emit('error', { message: 'Errore nel caricamento inventario' });
     }
   });
@@ -182,7 +175,7 @@ io.on('connection', (socket) => {
       const inventory = await addItemToInventory(socket.id, item);
       socket.emit('inventoryData', inventory);
     } catch (err) {
-      console.error('❌  Errore addItem:', err);
+      console.error('❌   Errore addItem:', err);
       socket.emit('error', { message: "Errore nell'aggiunta oggetto" });
     }
   });
@@ -192,45 +185,42 @@ io.on('connection', (socket) => {
       const inventory = await removeItemFromInventory(socket.id, item);
       socket.emit('inventoryData', inventory);
     } catch (err) {
-      console.error('❌  Errore removeItem:', err);
+      console.error('❌   Errore removeItem:', err);
       socket.emit('error', { message: 'Errore nella rimozione oggetto' });
+    }
+  });
+
+  socket.on('requestMap', async () => {
+    try {
+      const map = await GameMap.findOne({ name: 'default' }); // Cambia se necessario
+      if (map) {
+        socket.emit('mapData', { tiles: map.layers });
+      }
+    } catch (err) {
+      console.error('❌   Errore richiesta mappa:', err);
+      socket.emit('error', { message: 'Errore nel caricamento mappa' });
     }
   });
 
   socket.on('disconnect', async () => {
     try {
-      console.log('❌  Client disconnesso:', socket.id);
+      console.log('❌   Disconnesso:', socket.id);
       await Player.deleteOne({ socketId: socket.id });
+
       const players = await Player.find({});
-      io.emit('playersUpdate', players.map((p) => ({
-        username: p.username,
-        x: p.x,
-        y: p.y,
-        socketId: p.socketId,
+      io.emit('playersUpdate', players.map(({ username, x, y, socketId }) => ({
+        username, x, y, socketId
       })));
     } catch (err) {
-      console.error('❌  Errore disconnessione:', err);
+      console.error('❌   Errore disconnessione:', err);
     }
   });
-
-  // Evento socket per richiesta mappa
-  socket.on('requestMap', async () => {
-    try {
-      const map = await GameMap.findOne({ name: 'default' }); // modifica se serve
-      if (map) {
-        socket.emit('mapData', { tiles: map.layers }); // o map.tiles se così definito
-      }
-    } catch (err) {
-      console.error('❌  Errore richiesta mappa:', err);
-      socket.emit('error', { message: 'Errore nel caricamento mappa' });
-    }
-  });
-
 });
 
-// ===============================
+// ==============================================
 // Avvio server
-// ===============================
+// ==============================================
+
 server.listen(port, () => {
-  console.log(`✅  Server avviato su http://localhost:${port}`);
+  console.log(`✅   Server avviato su http://localhost:${port}`);
 });

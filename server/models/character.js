@@ -1,15 +1,21 @@
+// server/models/character.js
 import mongoose from 'mongoose';
 
-const CharacterSchema = new mongoose.Schema({
-  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }, // riferimento all'utente
-  name: { type: String, required: true, trim: true, unique: true },
-  class: { type: String, required: true }, // es. guerriero, mago...
+const positionSchema = new mongoose.Schema({
+  map: { type: String, required: true },
+  x: { type: Number, required: true },
+  y: { type: Number, required: true },
+}, { _id: false });
+
+const characterSchema = new mongoose.Schema({
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  name: { type: String, required: true },
   level: { type: Number, default: 1 },
-  x: { type: Number, default: 0 }, // posizione iniziale sulla mappa
-  y: { type: Number, default: 0 },
-  createdAt: { type: Date, default: Date.now },
-  // stats base, inventario, ecc. da aggiungere poi
+  exp: { type: Number, default: 0 },
+  hp: { type: Number, default: 100 },
+  sp: { type: Number, default: 50 },
+  mp: { type: Number, default: 30 },
+  pos: { type: positionSchema, required: true },
 });
 
-const Character = mongoose.model('Character', CharacterSchema);
-export default Character;
+export const Character = mongoose.model('Character', characterSchema);

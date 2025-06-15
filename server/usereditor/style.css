@@ -1,0 +1,66 @@
+body {
+  font-family: Arial, sans-serif;
+  margin: 20px;
+  max-width: 600px;
+}
+
+h1, h2 {
+  color: #333;
+}
+
+section {
+  margin-bottom: 40px;
+}
+
+ul {
+  list-style: none;
+  padding: 0;
+  max-height: 200px;
+  overflow-y: auto;
+  border: 1px solid #ccc;
+  margin-bottom: 10px;
+}
+
+ul li {
+  padding: 8px;
+  cursor: pointer;
+  border-bottom: 1px solid #eee;
+}
+
+ul li.selected {
+  background-color: #b3d4fc;
+}
+
+label {
+  display: block;
+  margin-top: 10px;
+}
+
+input[type="text"], input[type="password"] {
+  width: 100%;
+  padding: 6px;
+  margin-top: 4px;
+  box-sizing: border-box;
+}
+
+.form-buttons {
+  margin-top: 10px;
+}
+
+button {
+  padding: 8px 16px;
+  margin-right: 8px;
+  cursor: pointer;
+}
+
+#msg {
+  margin-top: 10px;
+  font-weight: bold;
+  height: 1.2em;
+}
+
+#char-section {
+  margin-top: 20px;
+  border-top: 2px solid #ccc;
+  padding-top: 20px;
+}

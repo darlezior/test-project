@@ -6,7 +6,6 @@ const saveBtn = document.getElementById('saveBtn');
 const deleteBtn = document.getElementById('deleteBtn');
 const clearBtn = document.getElementById('clearBtn');
 const msgEl = document.getElementById('msg');
-
 let selectedUser = null;
 
 async function fetchUsers() {
@@ -39,6 +38,11 @@ function selectUser(user) {
   deleteBtn.disabled = false;
   saveBtn.textContent = 'Aggiorna';
   showMessage('');
+
+  // ?? Carica i personaggi associati
+  if (window.loadCharacters) {
+    loadCharacters(user._id);
+  }
 }
 
 function updateSelectionUI() {
@@ -55,6 +59,15 @@ function clearForm() {
   saveBtn.textContent = 'Crea';
   updateSelectionUI();
   showMessage('');
+
+  // ?? Pulisce anche l'area dei personaggi se presente
+  if (window.clearCharForm) {
+    clearCharForm();
+    const charList = document.getElementById('charList');
+    if (charList) charList.innerHTML = '';
+    const charEditor = document.getElementById('charEditor');
+    if (charEditor) charEditor.style.display = 'none';
+  }
 }
 
 function showMessage(msg, isError = false) {
@@ -66,12 +79,10 @@ form.addEventListener('submit', async (e) => {
   e.preventDefault();
   const username = usernameInput.value.trim();
   const password = passwordInput.value;
-
   if (!username) {
     showMessage('Username è obbligatorio', true);
     return;
   }
-
   try {
     if (selectedUser) {
       // Aggiorna utente
@@ -102,7 +113,6 @@ form.addEventListener('submit', async (e) => {
 deleteBtn.addEventListener('click', async () => {
   if (!selectedUser) return;
   if (!confirm(`Sei sicuro di eliminare l'utente "${selectedUser.username}"?`)) return;
-
   try {
     const res = await fetch(`/api/users/${selectedUser.username}`, { method: 'DELETE' });
     if (!res.ok) throw new Error('Errore eliminazione utente');
